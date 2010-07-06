@@ -34,25 +34,21 @@ h3. 3. Configure your web server
 Assuming you are using RHEL5/CentOS5:
 * Copy redmine_webdav/extra/svn/RedmineAdavanced.pm in /etc/httpd/Apache/Authn
 * Create the file /etc/httpd/conf.d/redmine_webdav.conf
-<pre>
-<Location /redmine/webdav>
+
+@<Location /redmine/webdav>@
    AuthType Basic
    AuthName REDMINE
    Require valid-user
-
    PerlAccessHandler Apache::Authn::RedmineAdvanced::access_handler
    PerlAuthenHandler Apache::Authn::RedmineAdvanced::authen_handler
    RedmineDSN "DBI:mysql:database=redmine;host=192.168.10.1;port=3306"
    RedmineDbUser "redmine"
    RedmineDbPass "password"
    RedmineAuthenticationOnly "On"
-
   Order allow,deny
   Allow from 127.0.0.1
   Satisfy Any
-
-</Location>
-</pre>
+@</Location>@
 
 h3. 4. Restart your web server
 
