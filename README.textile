@@ -1,0 +1,118 @@
+h1. Introduction
+
+This WebDav plugin is mainly a POC (proof of concept) for accessing files and documents using WebDav protocol. 
+This plugin is a fork of this existing railsdav plugin (<a href="http://github.com/funkensturm/railsdav">railsdav</a>) with some modifications to make it run with REDMINE.
+
+This was done using REDMINE r3826 (=> 0.9.5 +) but any release after 0.9 should work
+
+h1. Setup
+
+WEBDAV is using basic HTTP authentication which is not supported in REDMINE core (at least in 0.9.5). A workaround is to use this very nice plugin <a href="http://github.com/AdamLantos/redmine_http_auth">redmine_http_auth</a> in conjunction with Apache and RedmineAdvanced.pm (located in  redmine_webdav/extra/svn)
+
+h3. 1. Install plugin into vendor/plugins
+
+If you want to install redmine_http_auth, run the following command from your redmine directory:
+* ruby script/plugin install http://github.com/AdamLantos/redmine_http_auth.git
+
+Then install redmine_webdav with:
+* tar xvzf redmine_webdav-0.1.tgz
+
+No DB migration is required...
+
+h3. 2. Get the required gems
+
+<a href="http://github.com/stueccles/railsdav">Railsdav</a> needs these 2 plugins:
+* unicode
+* shared-mime-info
+
+Under linux, install is done with:
+* sudo gem install unicode
+* sudo gem install shared-mime-info
+
+h3. 3. Configure your web server
+
+Assuming you are using RHEL5/CentOS5:
+* Copy redmine_webdav/extra/svn/RedmineAdavanced.pm in /etc/httpd/Apache/Authn
+* Create the file /etc/httpd/conf.d/redmine_webdav.conf
+<pre>
+<Location /redmine/webdav>
+   AuthType Basic
+   AuthName REDMINE
+   Require valid-user
+
+   PerlAccessHandler Apache::Authn::RedmineAdvanced::access_handler
+   PerlAuthenHandler Apache::Authn::RedmineAdvanced::authen_handler
+   RedmineDSN "DBI:mysql:database=redmine;host=192.168.10.1;port=3306"
+   RedmineDbUser "redmine"
+   RedmineDbPass "password"
+   RedmineAuthenticationOnly "On"
+
+  Order allow,deny
+  Allow from 127.0.0.1
+  Satisfy Any
+
+</Location>
+</pre>
+
+h3. 4. Restart your web server
+
+/etc/init.d/httpd restart
+
+h3. 5. Configure REDMINE with your web browser
+
+If everything is OK, you should see both plugins (WebDav and HTTP authentication) in the plugin list (Administration -> Plugins)
+
+A new permission is now available (Webdav access) and you have to assign it to the roles you need
+
+h3. 6. Set up your project
+
+Don't forget to activate the webdav module in the projects where you want to access files over WevDav
+
+h3. 7. Use webdav to manage files and documents
+
+You have to use a WebDav client in order to use the plugin. 
+
+For MacOSX (webdav access is natively supported):
+* Open the finder and choose "Go to -> Connect to server..."
+* enter *http://myserver/redmine/webdav* as the url of the server
+* enter your credentials (login/password)
+* You're in
+
+
+For linux:
+TODO
+
+For WindowsXP:
+* Open *My Network Places*.
+* Double-click *Add Network Place*.
+* Click Next twice, then type *http://myserver/redmine/webdav*
+* Click Next
+* enter your credentials (login/password)
+* Click Finish
+
+
+
+
+h1. Original author's README:
+
+Railsdav (WebDAV for Ruby On Rails)
+===================================
+
+THIS IS A MODIFIED VERSION OF THE ORIGINAL Railsdav, created by Marcello Nuccio.  I have done it because I was not able to make to use the original one.
+
+
+READ COMMENTS IN lib/acts_as_webdav.rb TO START!
+
+
+Railsdav is a plugin which allows for custom WebDAV controllers to be added to a Ruby On Rails application to expose functionality as filesystems to WebDAV clients such as Mac OS X Finder, Windows Network Places, Dreamweaver etc.
+
+Railsdav requires the following gems in addition to rails
+
+* unicode (gem install unicode)
+* shared-mime-info (gem install shared-mime-info)
+
+Railsdav was created by Stuart Eccles (http://www.liverail.net/). I'd like to thank the following people for assisting with Railsdav
+
+*   Albert Ramstedt who contributed bug fixes for a variety of code issues and helped with re-structuring the plugin
+*   Alex MacCaw
+*   Fabien Franzen
