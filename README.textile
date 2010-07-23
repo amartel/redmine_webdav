@@ -16,8 +16,8 @@ If you want to install redmine_http_auth, run the following command from your re
 
 Then install redmine_webdav with:
 * ruby script/plugin install http://github.com/amartel/redmine_webdav.git
+* rake db:migrate_plugins RAILS_ENV="production"
 
-No DB migration is required...
 
 h3. 2. Get the required gems
 
