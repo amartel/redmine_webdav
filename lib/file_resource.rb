@@ -9,12 +9,12 @@
 #
 
 require 'shared-mime-info'
+require 'tmpdir'
+require 'fileutils'
 
 module Railsdav
   class FileResource
     include Resource
-
-    @@logger = Logger.new(STDOUT)
 
     WEBDAV_PROPERTIES = [ :displayname, :creationdate, :getlastmodified,
       :getetag, :getcontenttype, :getcontentlength ]
@@ -27,42 +27,64 @@ module Railsdav
     }
 
     def initialize(*args)
+      #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
       @href=""
       @project = args.first
-      #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
-      #arg[1] : <documents | files>/<fichier | document_name | version_name> [/fichier]
+      @setting = WebdavSetting.find_or_create @project.id
       pinfo=args[1].split("/")
       @level = pinfo.length
       @isdir = true
       if @level == 0
         @container = @project
       end
-      if @level == 1
-        if pinfo[0] == "files"
-          @container = "files"
-        end
-        if pinfo[0] == "documents"
-          @container = "documents"
-        end
-      end
-      if @level > 1 && pinfo[0] == "files"
-        @container = @project.versions.find_by_name(pinfo[1])
-      end
-      if @level > 1 && pinfo[0] == "documents"
-        @container = @project.documents.find_by_title(pinfo[1])
-      end
-      if !@container && pinfo[0] == "files" && @level==2
-        @file = @project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
-        @container = @project
-        @isdir = false
-      end
-      if @level > 2
-        @isdir = false
+      if @setting.subversion_only && @level > 0
+        @container =  @project.repository.entry(File.join("/",args[1]), @project.repository.default_branch)
         if @container
-          @file = @container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+          @isdir = @container.is_dir?
+          @stat = @container
+          if !@isdir
+            @file = @container
+          end
+        end
+      else
+        if @level == 1
+          if pinfo[0] == @setting.files_label
+            @container = "files"
+          elsif pinfo[0] == @setting.documents_label
+            @container = "documents"
+          elsif pinfo[0] == @setting.subversion_label
+            @container = "scm"
+          end
+        end
+        if @level > 1
+          if pinfo[0] == @setting.files_label
+            @container = @project.versions.find_by_name(pinfo[1])
+            if !@container && @level==2
+              @file = @project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
+              @container = @project
+              @isdir = false
+            end
+          elsif pinfo[0] == @setting.documents_label
+            @container = @project.documents.find_by_title(pinfo[1])
+          elsif pinfo[0] == @setting.subversion_label
+            @container =  @project.repository.entry(args[1][(@setting.subversion_label.length)..-1], @project.repository.default_branch)
+            if @container
+              @isdir = @container.is_dir?
+              @stat = @container
+              if !@isdir
+                @file = @container
+              end
+            end
+          end
+        end
+        if @level > 2 && pinfo[0] != @setting.subversion_label
+          @isdir = false
+          if @container
+            @file = @container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+          end
         end
       end
-      if !@isdir && @file
+      if !@isdir && @file && pinfo[0] != @setting.subversion_label && !@setting.subversion_only
         @stat = File.lstat(@file.diskfile)
       end
       if args.last.is_a?(String)
@@ -86,48 +108,69 @@ module Railsdav
       (@isdir && @container) || @file
     end
 
-    def delete!
-      self.class.do_file_action do
-        if @file
-          @container.attachments.delete(@file)
-        else
-          if @container.is_a?(Document)
-            @container.destroy
-          end
-        end
-      end
-    end
-
     def children
       resources = []
       case @level
       when 0
-        resources << self.class.new(@project, "files", File.join(@href, "files")) if User.current.allowed_to?(:view_files, @project)
-        resources << self.class.new(@project, "documents", File.join(@href, "documents")) if User.current.allowed_to?(:view_documents, @project)
-      when 1
-        if @container == "files"
-          @project.versions.each do |version|
-            resources << self.class.new(@project, File.join("files", version.name), File.join(@href, version.name))
-          end
-          @project.attachments.each do |attach|
-            resources << self.class.new(@project, File.join("files", attach.filename), File.join(@href, attach.filename))
+        if (@setting.subversion_only && @setting.subversion_enabled)
+          @project.repository.entries("/", @project.repository.default_branch).each do |entry|
+            resources << self.class.new(@project, entry.name, File.join(@href, entry.name))
           end
         else
-          @project.documents.each do |document|
-            resources << self.class.new(@project, File.join("documents", document.title), File.join(@href, document.title))
+          resources << self.class.new(@project, @setting.files_label, File.join(@href, @setting.files_label)) if (@setting.files_enabled && User.current.allowed_to?(:view_files, @project))
+          resources << self.class.new(@project, @setting.documents_label, File.join(@href, @setting.documents_label)) if (@setting.documents_enabled && User.current.allowed_to?(:view_documents, @project))
+          resources << self.class.new(@project, @setting.subversion_label, File.join(@href, @setting.subversion_label)) if (@setting.subversion_enabled && User.current.allowed_to?(:browse_repository, @project))
+        end
+      when 1
+        if (@setting.subversion_only && @setting.subversion_enabled)
+          if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
+            @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+              resources << self.class.new(@project, File.join("/", @container.path, entry.name), File.join(@href, entry.name))
+            end
+          end
+        else
+          if @container == "files"
+            @project.versions.each do |version|
+              resources << self.class.new(@project, File.join(@setting.files_label, version.name), File.join(@href, version.name))
+            end
+            @project.attachments.each do |attach|
+              resources << self.class.new(@project, File.join(@setting.files_label, attach.filename), File.join(@href, attach.filename))
+            end
+          elsif @container == "documents"
+            @project.documents.each do |document|
+              resources << self.class.new(@project, File.join(@setting.documents_label, document.title), File.join(@href, document.title))
+            end
+          elsif @container == "scm"
+            @project.repository.entries("/", @project.repository.default_branch).each do |entry|
+              resources << self.class.new(@project, File.join(@setting.subversion_label, entry.name), File.join(@href, entry.name))
+            end
           end
         end
       when 2
         if @isdir
-          if @container.is_a?(Document)
-            foldername = @container.title
-            root="documents"
+          if @container.is_a?(Redmine::Scm::Adapters::Entry)
+            svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
+            @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+              resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, entry.name))
+            end
           else
-            foldername = @container.name
-            root="files"
+            if @container.is_a?(Document)
+              foldername = @container.title
+              root=@setting.documents_label
+            else
+              foldername = @container.name
+              root=@setting.files_label
+            end
+            @container.attachments.each do |attach|
+              resources << self.class.new(@project, File.join(root,foldername,attach.filename), File.join(@href, attach.filename))
+            end
           end
-          @container.attachments.each do |attach|
-            resources << self.class.new(@project, File.join(root,foldername,attach.filename), File.join(@href, attach.filename))
+        end
+      else
+        if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
+          svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
+          @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+            resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, entry.name))
           end
         end
       end
@@ -147,9 +190,15 @@ module Railsdav
       when 0
         @project.name
       when 1
-        @container
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          @container.name
+        else
+          @container
+        end
       else
-        if @isdir
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          @container.name
+        elsif @isdir
           if @container.is_a?(Document)
             @container.title
           else
@@ -163,7 +212,9 @@ module Railsdav
 
     def creationdate
       cdate = @project.created_on
-      if @level > 1
+      if @container.is_a?(Redmine::Scm::Adapters::Entry)
+        cdate = @container.lastrev.time
+      elsif @level > 1
         if @isdir
           cdate = @container.created_on
         else
@@ -175,7 +226,9 @@ module Railsdav
 
     def getlastmodified
       cdate = @project.updated_on
-      if @level > 1
+      if @container.is_a?(Redmine::Scm::Adapters::Entry)
+        cdate = @container.lastrev.time
+      elsif @level > 1
         if @isdir
           if @container.is_a?(Version)
             cdate = @container.updated_on
@@ -192,9 +245,15 @@ module Railsdav
       when 0
         sprintf('%x-%x-%x', @project.id, 0, @project.updated_on.to_i)
       when 1
-        sprintf('%x-%x-%x', (@project.id * 10) + @container.length, 0, @project.updated_on.to_i)
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          sprintf('%x-%x-%x', @container.size, 0, @container.lastrev.time.to_i)
+        else
+          sprintf('%x-%x-%x', (@project.id * 10) + @container.length, 0, @project.updated_on.to_i)
+        end
       else
-        if @isdir
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          sprintf('%x-%x-%x', @container.size, 0, @container.lastrev.time.to_i)
+        elsif @isdir
           if @container.is_a?(Version)
             sprintf('%x-%x-%x', @container.id, 0, @container.updated_on.to_i)
           else
@@ -221,7 +280,11 @@ module Railsdav
 
     def data
       if ! @isdir
-        File.new(@file.diskfile)
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          @project.repository.cat(@container.path, @project.repository.default_branch)
+        else
+          File.new(@file.diskfile)
+        end
       end
     end
 
@@ -231,78 +294,126 @@ module Railsdav
       end
     end
 
+    def delete!
+      self.class.do_file_action do
+        if @container.is_a?(Redmine::Scm::Adapters::Entry)
+          if @project.repository.scm.respond_to?('webdav_delete')
+            @project.repository.scm.webdav_delete(@project, @container.path, "deleted #{File.basename(@container.path)}", nil)
+          end
+        elsif @file
+          @container.attachments.delete(@file)
+        elsif @container.is_a?(Document)
+          @container.destroy
+        end
+      end
+    end
+
     def self.mkcol_for_path(project, path)
       #Create directory
       pinfo = path.split("/")
-      raise ForbiddenError unless pinfo.length == 2
-      raise ForbiddenError unless pinfo[0] == "documents"
-      container = project.documents.find_by_title(pinfo[1])
-      if !container
-        @doc = project.documents.build({ :title => pinfo[1],
-          :description => 'Created from WEBDAV',
-          :category_id => DocumentCategory.first.id})
-        @doc.save
+      setting = WebdavSetting.find_or_create project.id
+      if (pinfo[0] == setting.subversion_label || setting.subversion_only)
+        svnpath = setting.subversion_only ? "" : setting.subversion_label
+        if project.repository.scm.respond_to?('webdav_mkdir')
+          project.repository.scm.webdav_mkdir(project, path[(svnpath.length)..-1], "added #{File.basename(path)}", nil)
+        end
+      else
+        raise ForbiddenError unless pinfo.length == 2
+        raise ForbiddenError unless pinfo[0] == setting.documents_label
+        container = project.documents.find_by_title(pinfo[1])
+        if !container
+          @doc = project.documents.build({ :title => pinfo[1],
+            :description => 'Created from WEBDAV',
+            :category_id => DocumentCategory.first.id})
+          @doc.save
+        end
       end
     end
 
     def self.write_content_to_path(project, path, content)
       #Create a file
       pinfo = path.split("/")
-      case pinfo.length
-      when 2
-        if pinfo[0] == "files"
-          container = project
-          file = project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
+      setting = WebdavSetting.find_or_create project.id
+      if (pinfo[0] == setting.subversion_label || setting.subversion_only)
+        svnpath = setting.subversion_only ? "" : setting.subversion_label
+        container =  project.repository.entry(path[(svnpath.length)..-1], nil)
+        comments = container.nil? ? "added #{File.basename(path)}" : "updated #{File.basename(path)}"
+        if project.repository.scm.respond_to?('webdav_upload')
+          project.repository.scm.webdav_upload(project, path[(svnpath.length)..-1], content, comments, nil)
         end
-      when 3
-        if pinfo[0] == "files"
-          container = project.versions.find_by_name(pinfo[1])
-          file = container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+      else
+        case pinfo.length
+        when 2
+          if pinfo[0] == setting.files_label
+            container = project
+            file = project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
+          end
+        when 3
+          if pinfo[0] == setting.files_label
+            container = project.versions.find_by_name(pinfo[1])
+            file = container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+          end
+          if pinfo[0] == setting.documents_label
+            container = project.documents.find_by_title(pinfo[1])
+            file = container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+          end
         end
-        if pinfo[0] == "documents"
-          container = project.documents.find_by_title(pinfo[1])
-          file = container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+
+        if container
+          if file
+            container.attachments.delete(file)
+          end
+          uploaded_file = ActionController::UploadedTempfile.new(pinfo.last)
+          uploaded_file.binmode
+          uploaded_file.write(content)
+          #        uploaded_file.flush
+          uploaded_file.original_path = pinfo.last
+          uploaded_file.rewind
+          a = Attachment.create(:container => container,
+          :webdavfile => uploaded_file,
+          :description => "",
+          :author => User.current)
+          if a.new_record?
+            a.save
+          end
+          uploaded_file.close!
+          Mailer.deliver_attachments_added([ a ])
         end
-      end
-      if container
-        if file
-          container.attachments.delete(file)
-        end
-        uploaded_file = ActionController::UploadedTempfile.new(pinfo.last)
-        uploaded_file.binmode
-        uploaded_file.write(content)
-        #        uploaded_file.flush
-        uploaded_file.original_path = pinfo.last
-        uploaded_file.rewind
-        a = Attachment.create(:container => container,
-        :webdavfile => uploaded_file,
-        :description => "",
-        :author => User.current)
-        if a.new_record?
-          a.save
-        end
-        uploaded_file.close!
       end
     end
 
     def move_to_path(dest_path, depth)
-      pinfo = dest_path.split("/")
-      raise ForbiddenError unless !@isdir || (@container.is_a?(Document) && pinfo.length == 2)
-      self.class.do_file_action do
-        if !@isdir
-          FileResource.write_content_to_path(@project, dest_path, filecontent)
-          delete!
-        else
-          @container.title = CGI.unescape(pinfo[1])
-          @container.save
+      if @container.is_a?(Redmine::Scm::Adapters::Entry)
+        svnpath = @setting.subversion_only ? "" : @setting.subversion_label
+        if @project.repository.scm.respond_to?('webdav_move')
+          @project.repository.scm.webdav_move(@project, @container.path, dest_path[(svnpath.length)..-1], "moved/renamed #{File.basename(dest_path)}", nil)
+        end
+      else
+        pinfo = dest_path.split("/")
+        raise ForbiddenError unless !@isdir || (@container.is_a?(Document) && pinfo.length == 2)
+        self.class.do_file_action do
+          if !@isdir
+            FileResource.write_content_to_path(@project, dest_path, filecontent)
+            delete!
+          else
+            @container.title = CGI.unescape(pinfo[1])
+            @container.save
+          end
         end
       end
     end
 
     def copy_to_path(dest_path, depth)
-      raise ForbiddenError unless !@isdir
-      self.class.do_file_action do
-        self.class.write_content_to_path(@project, dest_path, filecontent)
+      if @container.is_a?(Redmine::Scm::Adapters::Entry)
+        svnpath = @setting.subversion_only ? "" : @setting.subversion_label
+        if @project.repository.scm.respond_to?('webdav_copy')
+          @project.repository.scm.webdav_copy(@project, @container.path, dest_path[(svnpath.length)..-1], "copied #{File.basename(dest_path)}", nil)
+        end
+      else
+        raise ForbiddenError unless !@isdir
+        self.class.do_file_action do
+          self.class.write_content_to_path(@project, dest_path, filecontent)
+        end
       end
     end
 
@@ -317,5 +428,52 @@ module Railsdav
         raise InsufficientStorageError
       end
     end
+
+    def self.shell_quote(str)
+      if Redmine::Platform.mswin?
+        '"' + str.gsub(/"/, '\\"') + '"'
+      else
+        "'" + str.gsub(/'/, "'\"'\"'") + "'"
+      end
+    end
+
+    def svn_target(repository, path = '')
+      self.class.svn_target(repository, path)
+    end
+
+    def self.svn_target(repository, path = '')
+      base = repository.url
+      base = base.sub(/^.*:\/\/[^\/]*\//,"file:///svnroot/")
+      uri = "#{base}/#{path}"
+      uri = URI.escape(URI.escape(uri), '[]')
+      shell_quote(uri.gsub(/[?<>\*]/, ''))
+    end
+
+    def self.gettmpdir(create = true)
+      tmpdir = Dir.tmpdir
+      t = Time.now.strftime("%Y%m%d")
+      n = nil
+      begin
+        path = "#{tmpdir}/#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
+        path << "-#{n}" if n
+        Dir.mkdir(path, 0700)
+        Dir.rmdir(path) unless create
+      rescue Errno::EEXIST
+        n ||= 0
+        n += 1
+        retry
+      end
+
+      if block_given?
+        begin
+          yield path
+        ensure
+          FileUtils.remove_entry_secure path
+        end
+      else
+        path
+      end
+    end
+
   end
 end

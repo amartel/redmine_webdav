@@ -66,12 +66,12 @@ module Railsdav
           begin
             set_depth
             set_path_info
-#            if @path_info.split("/").last[0,1] != "."
-              check_read(@path_info)
-              __send__(method)
-#            else
-#              render :nothing => true, :status => 404
-#            end
+            #            if @path_info.split("/").last[0,1] != "."
+            check_read(@path_info)
+            __send__(method)
+            #            else
+            #              render :nothing => true, :status => 404
+            #            end
           rescue BaseError => error
             render :nothing => true, :status => error.http_status
           end
@@ -155,7 +155,30 @@ module Railsdav
           #TODO implementation for now return a 200 OK
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
-          render :nothing => true, :status => 200
+
+          locktype = params[:lockinfo][:locktype] ? params[:lockinfo][:locktype].keys.first : "read"
+          lockscope = params[:lockinfo][:lockscope] ? params[:lockinfo][:lockscope].keys.first : "exclusive"
+          owner = params[:lockinfo][:owner] ? params[:lockinfo][:owner][:href] : ""
+
+          xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+          xml << "<D:prop xmlns:D=\"DAV:\">"
+          xml << "<D:lockdiscovery>"
+          xml << "<D:activelock>"
+          xml << "<D:locktype><D:#{locktype}/></D:locktype>"
+          xml << "<D:lockscope><D:#{lockscope}/></D:lockscope>"
+          xml << "<D:depth>Infinity</D:depth>"
+          xml << "<D:owner><D:href>#{owner}</D:href></D:owner>"
+          xml << "<D:timeout>Second-345600</D:timeout>"
+          xml << "<D:locktoken><D:href>urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1</d:href></D:locktoken>"
+          xml << "<D:lockroot><D:href>#{request.url}</D:href>"
+          xml << "</D:activelock>"
+          xml << "</D:lockdiscovery>"
+          xml << "</D:prop>"
+
+          response.headers['MS-Author-Via'] = "DAV"
+          response.headers["Lock-Token"] = "<urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1>"
+          render :text => xml, :status => 200, :layout => false, :content_type => "application/xml"
+          #render :nothing => true, :status => 200
         end
 
         def webdav_unlock
@@ -194,7 +217,6 @@ module Railsdav
             xml << "</D:response>"
           end
           xml << "</D:multistatus>"
-
           render :text => xml, :status => 207, :layout => false, :content_type => "application/xml"
 
           #render(:file => PROPFIND_TEMPLATE, :status => 207, :locals => { :resources => resources.flatten } )
@@ -282,7 +304,7 @@ module Railsdav
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
           data_to_send = resource.data
-          raise NotFoundError if data_to_send.blank?
+          #          raise NotFoundError if data_to_send.blank?
 
           response.headers["Last-Modified"] = resource.getlastmodified
           if data_to_send.kind_of?(File)
@@ -353,9 +375,9 @@ module Railsdav
           logger.debug "params[:path_info] = #{params[:path_info].inspect}"
           path = params[:path_info].join('/')
           @path_info = case request.env["HTTP_USER_AGENT"]
-          when /Microsoft|Windows/
-            logger.info("CONVERTED: " + Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first)
-            Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first
+          #          when /Microsoft|Windows/
+          #            logger.info("CONVERTED: " + Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first)
+          #            Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first
           when /cadaver/
             URI.unescape(URI.unescape(path))
           else
@@ -369,29 +391,51 @@ module Railsdav
         end
 
         def check_read(path)
-          @pinfo = path.split("/")
-          if @pinfo.length > 0
-            case @pinfo[0]
-            when "files"
-              raise ForbiddenError unless @user.allowed_to?(:view_files, @project)
-            when "documents"
-              raise ForbiddenError unless @user.allowed_to?(:view_documents, @project)
+          setting = WebdavSetting.find_or_create @project.id
+          if (setting.subversion_only && setting.subversion_enabled)
+            raise ForbiddenError unless @user.allowed_to?(:browse_repository, @project)
+          else
+            @pinfo = path.split("/")
+            if @pinfo.length > 0
+              case @pinfo[0]
+              when setting.files_label
+                raise ForbiddenError unless (setting.files_enabled && @user.allowed_to?(:view_files, @project))
+              when setting.documents_label
+                raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:view_documents, @project))
+              when setting.subversion_label
+                raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:browse_repository, @project))
+              end
             end
           end
         end
 
         def check_write(path)
-          @pinfo = path.split("/")
-          if @pinfo.length > 0
-            case @pinfo[0]
-            when "files"
-              raise ForbiddenError unless @user.allowed_to?(:manage_files, @project)
-            when "documents"
-              raise ForbiddenError unless @user.allowed_to?(:manage_documents, @project)
-            end
-          else
-            raise ForbiddenError
+          setting = WebdavSetting.find_or_create @project.id
+          if request.env["HTTP_USER_AGENT"] =~ /Darwin/
+#            RAILS_DEFAULT_LOGGER.info "check_write1"
+            raise ForbiddenError unless setting.macosx_write
           end
+          if (setting.subversion_only && setting.subversion_enabled)
+#            RAILS_DEFAULT_LOGGER.info "check_write2"
+            raise ForbiddenError unless (@user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
+          else
+            @pinfo = path.split("/")
+            if @pinfo.length > 0
+              case @pinfo[0]
+              when setting.files_label
+                raise ForbiddenError unless (setting.files_enabled && @user.allowed_to?(:manage_files, @project))
+              when setting.documents_label
+                raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:manage_documents, @project))
+              when setting.subversion_label
+#                RAILS_DEFAULT_LOGGER.info "check_write3"
+                raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
+              end
+            else
+              raise ForbiddenError
+            end
+          end
+          
+#      RAILS_DEFAULT_LOGGER.info "check_write4"
         end
       end
     end

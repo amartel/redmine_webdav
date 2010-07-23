@@ -1,0 +1,24 @@
+<div id="webdav_settings">
+<%
+    @webdav_setting = WebdavSetting.find_or_create(@project.id)
+%>
+
+<% labelled_tabular_form_for :setting, @webdav_setting,
+                             :url => {:controller => 'webdav_settings',
+                             :action => 'update', :id => @project, :tab => 'webdav',
+                             :partial => 'webdav_settings/update',
+                             :setting_id => @webdav_setting.id} do |f| %>
+    <%= error_messages_for 'webdav_setting' %>
+    <div class="box">
+      <p><%= f.check_box 'files_enabled' %></p>
+      <p><%= f.text_field :files_label, :required => true, :size => 60 %></p>
+      <p><%= f.check_box 'documents_enabled' %></p>
+      <p><%= f.text_field :documents_label, :required => true, :size => 60 %></p>
+      <p><%= f.check_box 'subversion_enabled' %> <%=h l(:subversion_enabled_info)%></p>
+      <p><%= f.text_field :subversion_label, :required => true, :size => 60 %></p>
+      <p><%= f.check_box 'macosx_write' %> <%=h l(:macosx_write_info)%></p>
+      <p><%= f.check_box 'subversion_only' %> <%=h l(:subversion_only_info)%></p>
+    </div>
+    <%= submit_tag l(:button_update) %>
+<% end %>
+</div>

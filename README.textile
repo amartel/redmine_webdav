@@ -58,7 +58,7 @@ h3. 5. Configure REDMINE with your web browser
 
 If everything is OK, you should see both plugins (WebDav and HTTP authentication) in the plugin list (Administration -> Plugins)
 
-A new permission is now available (Webdav access) and you have to assign it to the roles you need
+New permissions are now available and you have to assign them to the roles you need
 
 h3. 6. Set up your project
 

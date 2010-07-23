@@ -1,0 +1,8 @@
+0.1.0 : 2010-07-23
+Minor evolution with refactoring...
+
+new: add repository access through WEBDAV (Read/Write for subversion if repositories are on the redmine server, Read only for all others supported SCM)
+new: settings per project with new permission (manage WEBDAV)
+
+0.0.1 : 2010-07-06
+Initial release
