@@ -156,9 +156,14 @@ module Railsdav
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
 
-          locktype = params[:lockinfo][:locktype] ? params[:lockinfo][:locktype].keys.first : "read"
-          lockscope = params[:lockinfo][:lockscope] ? params[:lockinfo][:lockscope].keys.first : "exclusive"
-          owner = params[:lockinfo][:owner] ? params[:lockinfo][:owner][:href] : ""
+          locktype = "read"
+          lockscope = "exclusive"
+          owner = ""
+          if params[:lockinfo]
+            locktype = params[:lockinfo][:locktype] ? params[:lockinfo][:locktype].keys.first : "read"
+            lockscope = params[:lockinfo][:lockscope] ? params[:lockinfo][:lockscope].keys.first : "exclusive"
+            owner = params[:lockinfo][:owner] ? params[:lockinfo][:owner][:href] : ""
+          end
 
           xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
           xml << "<D:prop xmlns:D=\"DAV:\">"
