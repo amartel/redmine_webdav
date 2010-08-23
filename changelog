@@ -1,3 +1,6 @@
+0.1.2 : 2010-08-23
+fixed: Office documents are now opened with read/write access
+
 0.1.1 : 2010-08-03
 new: support for Read/Write operations on filesystem SCM
 

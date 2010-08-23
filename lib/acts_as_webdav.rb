@@ -162,7 +162,7 @@ module Railsdav
           if params[:lockinfo]
             locktype = params[:lockinfo][:locktype] ? params[:lockinfo][:locktype].keys.first : "read"
             lockscope = params[:lockinfo][:lockscope] ? params[:lockinfo][:lockscope].keys.first : "exclusive"
-            owner = params[:lockinfo][:owner] ? params[:lockinfo][:owner][:href] : ""
+            owner = User.current.login
           end
 
           xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
@@ -171,16 +171,15 @@ module Railsdav
           xml << "<D:activelock>"
           xml << "<D:locktype><D:#{locktype}/></D:locktype>"
           xml << "<D:lockscope><D:#{lockscope}/></D:lockscope>"
-          xml << "<D:depth>Infinity</D:depth>"
-          xml << "<D:owner><D:href>#{owner}</D:href></D:owner>"
+          xml << "<D:depth>#{request.headers["Depth"]}</D:depth>"
+          xml << "<D:owner>#{owner}</D:owner>"
           xml << "<D:timeout>Second-345600</D:timeout>"
-          xml << "<D:locktoken><D:href>urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1</d:href></D:locktoken>"
-          xml << "<D:lockroot><D:href>#{request.url}</D:href>"
+          xml << "<D:locktoken><D:href>urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1</D:href></D:locktoken>"
+          xml << "<D:lockroot><D:href>#{request.url}</D:href></D:lockroot>"
           xml << "</D:activelock>"
           xml << "</D:lockdiscovery>"
           xml << "</D:prop>"
 
-          response.headers['MS-Author-Via'] = "DAV"
           response.headers["Lock-Token"] = "<urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1>"
           render :text => xml, :status => 200, :layout => false, :content_type => "application/xml"
           #render :nothing => true, :status => 200
@@ -311,6 +310,12 @@ module Railsdav
           data_to_send = resource.data
           #          raise NotFoundError if data_to_send.blank?
 
+          if request.headers["If-Modified-Since"]
+            if (Time.httpdate(request.headers["If-Modified-Since"]) - Time.httpdate(resource.getlastmodified)) >= -0.1
+              render :nothing => true, :status => 304
+              return
+            end
+          end
           response.headers["Last-Modified"] = resource.getlastmodified
           if data_to_send.kind_of?(File)
             send_file File.expand_path(data_to_send.path), :filename => resource.displayname, :stream => true
