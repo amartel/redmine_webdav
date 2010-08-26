@@ -1,3 +1,8 @@
+0.1.3 : 2010-08-26
+fixed: add better support to Windows XP + MSOffice XP (thanks to Xabier Elkano) 
+fixed: urls in PROPFIND responses are now encoded (for multi-bytes charset support) 
+fixed: copy directory is now recursive (filesystem SCM)
+
 0.1.2 : 2010-08-23
 fixed: Office documents are now opened with read/write access
 

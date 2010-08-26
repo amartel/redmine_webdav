@@ -132,7 +132,7 @@ module FilesystemAdapterMethodsWebdav
     if File.exist?(fullpath) && path != "/"
       error = false
       begin
-        FileUtils.copy fullpath, File.join(project.repository.url, dest_path)
+        FileUtils.cp_r fullpath, File.join(project.repository.url, dest_path)
         if metapath
           metapathfull = fullpath.sub(/\/files\//, "/attributes/")
           metapathtarget = File.join(project.repository.url, dest_path).sub(/\/files\//, "/attributes/")

@@ -112,7 +112,7 @@ module Railsdav
               resources.each do |project|
                 if @user.allowed_to?(:webdav_access, project)
                   xml << "<D:response>"
-                  xml << "<D:href>" << File.join(href, project.identifier) << "</D:href>"
+                  xml << "<D:href>" << File.join(href, URI.escape(project.identifier)) << "</D:href>"
                   xml << "<D:propstat><D:prop>"
                   xml << "<D:displayname>#{project.identifier}</D:displayname>"
                   xml << "<D:creationdate>#{project.created_on.xmlschema}</D:creationdate>"
@@ -202,21 +202,21 @@ module Railsdav
           $KCODE = 'UTF8'
           #RAILS_DEFAULT_LOGGER.info "Dans propfind"
           xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <D:multistatus xmlns:D=\"DAV:\">"
-          resources.flatten.each do |resource|
+          resources.flatten.each do |res|
             xml << "<D:response>"
-            xml << "<D:href>" << resource.href << "</D:href>"
+            xml << "<D:href>" << res.href << "</D:href>"
             xml << "<D:propstat><D:prop>"
-            resource.properties.each do |property, value|
+            res.properties.each do |property, value|
               if !value
                 value = ""
               end
               xml << "<D:#{property}>#{value}</D:#{property}>"
             end
             xml << "<D:resourcetype>"
-            xml << "<D:collection/>" if resource.collection?
+            xml << "<D:collection/>" if res.collection?
             xml << "</D:resourcetype>"
             xml << "</D:prop>"
-            xml << "<D:status>#{resource.status}</D:status>"
+            xml << "<D:status>HTTP/1.1 200 OK</D:status>"
             xml << "</D:propstat>"
             xml << "</D:response>"
           end
@@ -276,6 +276,7 @@ module Railsdav
             raise ForbiddenError if uri.path !~  /^#{Regexp.escape(base_path)}\//
             logger.debug "destination_path = #{$'.inspect}"
             dest_path = $'
+            dest_path = convert_path_in(dest_path)
           rescue URI::InvalidURIError
             raise BadGatewayError
           end
@@ -293,14 +294,14 @@ module Railsdav
         def webdav_copy
           with_source_and_destination_resources do |source_resource, dest_path|
             check_write(dest_path)
-            copy_to_path(source_resource, CGI.unescape(dest_path), @depth)
+            copy_to_path(source_resource, dest_path, @depth)
           end
         end
 
         def webdav_move
           with_source_and_destination_resources do |source_resource, dest_path|
             check_write(dest_path)
-            move_to_path(source_resource, CGI.unescape(dest_path), @depth)
+            move_to_path(source_resource, dest_path, @depth)
           end
         end
 
@@ -311,7 +312,7 @@ module Railsdav
           #          raise NotFoundError if data_to_send.blank?
 
           if request.headers["If-Modified-Since"]
-            if (Time.httpdate(request.headers["If-Modified-Since"]) - Time.httpdate(resource.getlastmodified)) >= -0.1
+            if (Time.httpdate(request.headers["If-Modified-Since"].split(';').first) - Time.httpdate(resource.getlastmodified)) >= -0.1
               render :nothing => true, :status => 304
               return
             end
@@ -380,19 +381,20 @@ module Railsdav
           ret_set
         end
 
-        def set_path_info
-          raise ForbiddenError if params[:path_info].nil?
-          logger.debug "params[:path_info] = #{params[:path_info].inspect}"
-          path = params[:path_info].join('/')
-          @path_info = case request.env["HTTP_USER_AGENT"]
-          #          when /Microsoft|Windows/
-          #            logger.info("CONVERTED: " + Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first)
-          #            Iconv.iconv('UTF-8', 'latin1', URI.unescape(path)).first
+        def convert_path_in(path)
+          case request.env["HTTP_USER_AGENT"]
           when /cadaver/
             URI.unescape(URI.unescape(path))
           else
             URI.unescape(path)
           end
+        end
+        
+        def set_path_info
+          raise ForbiddenError if params[:path_info].nil?
+          logger.debug "params[:path_info] = #{params[:path_info].inspect}"
+          path = params[:path_info].join('/')
+          @path_info = convert_path_in(path)
         end
 
         def set_depth
@@ -422,11 +424,9 @@ module Railsdav
         def check_write(path)
           setting = WebdavSetting.find_or_create @project.id
           if request.env["HTTP_USER_AGENT"] =~ /Darwin/
-#            RAILS_DEFAULT_LOGGER.info "check_write1"
             raise ForbiddenError unless setting.macosx_write
           end
           if (setting.subversion_only && setting.subversion_enabled)
-#            RAILS_DEFAULT_LOGGER.info "check_write2"
             raise ForbiddenError unless (@user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
           else
             @pinfo = path.split("/")
@@ -437,7 +437,6 @@ module Railsdav
               when setting.documents_label
                 raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:manage_documents, @project))
               when setting.subversion_label
-#                RAILS_DEFAULT_LOGGER.info "check_write3"
                 raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
               end
             else
@@ -445,7 +444,6 @@ module Railsdav
             end
           end
           
-#      RAILS_DEFAULT_LOGGER.info "check_write4"
         end
       end
     end
