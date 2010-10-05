@@ -34,6 +34,7 @@
 
 require 'action_controller'
 require 'unicode'
+require 'uuid'
 
 module Railsdav
   module Acts #:nodoc:
@@ -151,8 +152,22 @@ module Railsdav
           render :nothing => true, :status => 200
         end
 
+        def out_of_date
+          state=false
+          lock=Lock.find(:first, :conditions => ["resource = ?", request.url] )
+          if not lock.nil?
+            current=Time.now - 36000
+            logger.debug "DEBUG: lock timestamp: #{lock[:timestamp].inspect} and current: #{current}"
+            if lock[:timestamp] < current
+              logger.debug "DEBUG: Lock for #{request.url} out of date"
+              state=true
+              Lock.delete_all( :resource=> request.url )
+            end
+          end
+          state
+        end
+
         def webdav_lock
-          #TODO implementation for now return a 200 OK
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
 
@@ -165,30 +180,41 @@ module Railsdav
             owner = User.current.login
           end
 
-          xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
-          xml << "<D:prop xmlns:D=\"DAV:\">"
-          xml << "<D:lockdiscovery>"
-          xml << "<D:activelock>"
-          xml << "<D:locktype><D:#{locktype}/></D:locktype>"
-          xml << "<D:lockscope><D:#{lockscope}/></D:lockscope>"
-          xml << "<D:depth>#{request.headers["Depth"]}</D:depth>"
-          xml << "<D:owner>#{owner}</D:owner>"
-          xml << "<D:timeout>Second-345600</D:timeout>"
-          xml << "<D:locktoken><D:href>urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1</D:href></D:locktoken>"
-          xml << "<D:lockroot><D:href>#{request.url}</D:href></D:lockroot>"
-          xml << "</D:activelock>"
-          xml << "</D:lockdiscovery>"
-          xml << "</D:prop>"
+          if Lock.exists?( :resource=>request.url ) and not out_of_date
+            render :status => 423, :nothing => true
+          else
+            newlock=UUID.create.guid
+            mylock=Lock.create ( :uid=>newlock, :locktype=>locktype, :lockscope=>lockscope, :owner=>User.current.login,
+            :resource => request.url, :timestamp=> Time.now )
 
-          response.headers["Lock-Token"] = "<urn:uuid:e71d4fae-5dec-22df-fea5-00a0c93bd5eb1>"
-          render :text => xml, :status => 200, :layout => false, :content_type => "application/xml"
-          #render :nothing => true, :status => 200
+            xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
+            xml << "<D:prop xmlns:D=\"DAV:\">"
+            xml << "<D:lockdiscovery>"
+            xml << "<D:activelock>"
+            xml << "<D:locktype><D:#{locktype}/></D:locktype>"
+            xml << "<D:lockscope><D:#{lockscope}/></D:lockscope>"
+            xml << "<D:depth>#{request.headers["Depth"]}</D:depth>"
+            xml << "<D:owner>#{owner}</D:owner>"
+            xml << "<D:timeout>Second-36000</D:timeout>"
+            xml << "<D:locktoken><D:href>urn:uuid:#{newlock}</D:href></D:locktoken>"
+            xml << "<D:lockroot><D:href>#{request.url}</D:href></D:lockroot>"
+            xml << "</D:activelock>"
+            xml << "</D:lockdiscovery>"
+            xml << "</D:prop>"
+
+            logger.debug "DEBUG: lock create error: " + mylock.errors.full_messages.inspect
+            response.headers["Lock-Token"] = "<urn:uuid:"+ newlock + ">"
+            render :text => xml, :status => 200, :layout => false, :content_type => "application/xml"
+          end
         end
 
         def webdav_unlock
           #TODO implementation for now return a 200 OK
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
+          logger.debug "DEBUG: lock_tocken: " + request.headers["Lock-Token"].split(':')[2].chop.inspect
+          tocken=request.headers["Lock-Token"].split(':')[2].chop
+          Lock.delete_all( :uid=> tocken )
           render :nothing => true, :status => 200
         end
 
@@ -254,16 +280,26 @@ module Railsdav
         end
 
         def webdav_delete
-          check_write(@path_info)
-          resource = find_resource_by_path(@path_info)
-          if resource
-            resource.delete!
-          end
+          if Lock.exists?( :resource=>request.url )
+            raise ForbiddenError
+          else
+            check_write(@path_info)
+            resource = find_resource_by_path(@path_info)
+            if resource
+              resource.delete!
+            end
 
+          end
           render :nothing => true, :status => 204
         end
 
         def webdav_put
+          if Lock.exists?( :resource=>request.url )
+            if not Lock.exists?( :resource=>request.url, :owner=>User.current.login )
+              raise ForbiddenError
+            end
+          end
+
           check_write(@path_info)
           write_content_to_path(@path_info, request.raw_post)
           render :nothing => true, :status => 201
@@ -299,9 +335,13 @@ module Railsdav
         end
 
         def webdav_move
-          with_source_and_destination_resources do |source_resource, dest_path|
-            check_write(dest_path)
-            move_to_path(source_resource, dest_path, @depth)
+          if Lock.exists?( :resource=>request.url )
+            raise ForbiddenError
+          else
+            with_source_and_destination_resources do |source_resource, dest_path|
+              check_write(dest_path)
+              move_to_path(source_resource, dest_path, @depth)
+            end
           end
         end
 
@@ -389,7 +429,7 @@ module Railsdav
             URI.unescape(path)
           end
         end
-        
+
         def set_path_info
           raise ForbiddenError if params[:path_info].nil?
           logger.debug "params[:path_info] = #{params[:path_info].inspect}"
@@ -443,7 +483,7 @@ module Railsdav
               raise ForbiddenError
             end
           end
-          
+
         end
       end
     end

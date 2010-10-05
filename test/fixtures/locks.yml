@@ -1,0 +1,17 @@
+# Read about fixtures at http://ar.rubyonrails.org/classes/Fixtures.html
+one:
+  id: 1
+  uid: MyText
+  timestamp: 2010-09-29 09:08:15
+  ipaddress: MyString
+  locktype: MyString
+  user: MyString
+  resource: MyText
+two:
+  id: 2
+  uid: MyText
+  timestamp: 2010-09-29 09:08:15
+  ipaddress: MyString
+  locktype: MyString
+  user: MyString
+  resource: MyText

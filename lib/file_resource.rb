@@ -27,7 +27,6 @@ module Railsdav
     }
 
     def initialize(*args)
-      #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
       @href=""
       @project = args.first
       @setting = WebdavSetting.find_or_create @project.id
