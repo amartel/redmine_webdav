@@ -1,0 +1,16 @@
+# Russian strings go
+ru:
+  webdav: WebDAV
+  permission_webdav_settings: Настроить WEBDAV
+  permission_webdav_access: Использовать WEBDAV
+  subversion_only_info: "Запретить доступ к верхним папкам в дереве (files/documents/subversion) — обслуживать только файлы из хранилища"
+  subversion_enabled_info: "Только если хранилище subversion установлено на этом сервере"
+  field_files_enabled: "Файлы"
+  field_documents_enabled: "Документы"
+  field_subversion_enabled: "Хранилище"
+  field_subversion_only: "Только хранилище"
+  field_files_label: "Папка"
+  field_documents_label: "Папка"
+  field_subversion_label: "Папка"
+  field_macosx_write: "MacOSX пишет"
+  macosx_write_info: "Позволять MacOSX писать, используя WEBDAV (будет создано много файлов!)"
