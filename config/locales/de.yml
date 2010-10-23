@@ -1,0 +1,17 @@
+# German strings go
+de:
+  webdav: WebDAV
+  permission_webdav_settings: WEBDAV verwalten
+  permission_webdav_access: WEBDAV benutzen
+  subversion_only_info: "Deaktiviere die Ordner der ersten Ebene (files/documents/subversion) und verwalte nur Dateien aus dem Repository."
+  subversion_enabled_info: "Funktioniert nur wenn ein lokales Subversion Repository auf dem Server vorhanden ist."
+  field_files_enabled: "Dateien"
+  field_documents_enabled: "Dokumente"
+  field_subversion_enabled: "Repository"
+  field_subversion_only: "Nur Repository"
+  field_files_label: "Ordner"
+  field_documents_label: "Ordner"
+  field_subversion_label: "Ordner"
+  field_macosx_write: "MacOSX Schreibzugriff"
+  macosx_write_info: "Erlaube MacOSX das Schreiben per WEBDAV. (Achtung: Dadurch werden viele Dateien erstellt!!)"
+  
