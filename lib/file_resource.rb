@@ -27,6 +27,7 @@ module Railsdav
     }
 
     def initialize(*args)
+      #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
       @href=""
       @project = args.first
       @setting = WebdavSetting.find_or_create @project.id
@@ -37,7 +38,7 @@ module Railsdav
         @container = @project
       end
       if @setting.subversion_only && @level > 0
-        @container =  @project.repository.entry(File.join("/",args[1]), @project.repository.default_branch)
+        @container =  @project.repository.entry(FileResource.scm_path(@project, args[1]), @project.repository.default_branch)
         if @container
           @isdir = @container.is_dir?
           @stat = @container
@@ -66,7 +67,7 @@ module Railsdav
           elsif pinfo[0] == @setting.documents_label
             @container = @project.documents.find_by_title(pinfo[1])
           elsif pinfo[0] == @setting.subversion_label
-            @container =  @project.repository.entry(args[1][(@setting.subversion_label.length)..-1], @project.repository.default_branch)
+            @container =  @project.repository.entry(FileResource.scm_path(@project, args[1][(@setting.subversion_label.length)..-1]), @project.repository.default_branch)
             if @container
               @isdir = @container.is_dir?
               @stat = @container
@@ -112,7 +113,7 @@ module Railsdav
       case @level
       when 0
         if (@setting.subversion_only && @setting.subversion_enabled)
-          @project.repository.entries("/", @project.repository.default_branch).each do |entry|
+          @project.repository.entries(FileResource.scm_path(@project, "/"), @project.repository.default_branch).each do |entry|
             resources << self.class.new(@project, entry.name, File.join(@href, URI.escape(entry.name)))
           end
         else
@@ -123,7 +124,7 @@ module Railsdav
       when 1
         if (@setting.subversion_only && @setting.subversion_enabled)
           if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
-            @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+            @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
               resources << self.class.new(@project, File.join("/", @container.path, entry.name), File.join(@href, URI.escape(entry.name)))
             end
           end
@@ -140,7 +141,7 @@ module Railsdav
               resources << self.class.new(@project, File.join(@setting.documents_label, document.title), File.join(@href, URI.escape(document.title)))
             end
           elsif @container == "scm"
-            @project.repository.entries("/", @project.repository.default_branch).each do |entry|
+            @project.repository.entries(FileResource.scm_path(@project, "/"), @project.repository.default_branch).each do |entry|
               resources << self.class.new(@project, File.join(@setting.subversion_label, entry.name), File.join(@href, URI.escape(entry.name)))
             end
           end
@@ -149,7 +150,7 @@ module Railsdav
         if @isdir
           if @container.is_a?(Redmine::Scm::Adapters::Entry)
             svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
-            @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+            @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
               resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, URI.escape(entry.name)))
             end
           else
@@ -168,7 +169,7 @@ module Railsdav
       else
         if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
           svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
-          @project.repository.entries(@container.path, @project.repository.default_branch).each do |entry|
+          @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
             resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, URI.escape(entry.name)))
           end
         end
@@ -280,7 +281,7 @@ module Railsdav
     def data
       if ! @isdir
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          @project.repository.cat(@container.path, @project.repository.default_branch)
+          @project.repository.cat(FileResource.scm_path(@project, @container.path), @project.repository.default_branch)
         else
           File.new(@file.diskfile)
         end
@@ -297,7 +298,7 @@ module Railsdav
       self.class.do_file_action do
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
           if @project.repository.scm.respond_to?('webdav_delete')
-            @project.repository.scm.webdav_delete(@project, @container.path, "deleted #{File.basename(@container.path)}", nil)
+            @project.repository.scm.webdav_delete(@project, FileResource.scm_path(@project, @container.path), "deleted #{File.basename(@container.path)}", nil)
           end
         elsif @file
           @container.attachments.delete(@file)
@@ -314,7 +315,7 @@ module Railsdav
       if (pinfo[0] == setting.subversion_label || setting.subversion_only)
         svnpath = setting.subversion_only ? "" : setting.subversion_label
         if project.repository.scm.respond_to?('webdav_mkdir')
-          project.repository.scm.webdav_mkdir(project, path[(svnpath.length)..-1], "added #{File.basename(path)}", nil)
+          project.repository.scm.webdav_mkdir(project, self.scm_path(project, path[(svnpath.length)..-1]), "added #{File.basename(path)}", nil)
         end
       else
         raise ForbiddenError unless pinfo.length == 2
@@ -338,7 +339,7 @@ module Railsdav
         container =  project.repository.entry(path[(svnpath.length)..-1], nil)
         comments = container.nil? ? "added #{File.basename(path)}" : "updated #{File.basename(path)}"
         if project.repository.scm.respond_to?('webdav_upload')
-          project.repository.scm.webdav_upload(project, path[(svnpath.length)..-1], content, comments, nil)
+          project.repository.scm.webdav_upload(project, self.scm_path(project, path[(svnpath.length)..-1]), content, comments, nil)
         end
       else
         case pinfo.length
@@ -385,7 +386,7 @@ module Railsdav
       if @container.is_a?(Redmine::Scm::Adapters::Entry)
         svnpath = @setting.subversion_only ? "" : @setting.subversion_label
         if @project.repository.scm.respond_to?('webdav_move')
-          @project.repository.scm.webdav_move(@project, @container.path, dest_path[(svnpath.length)..-1], "moved/renamed #{File.basename(dest_path)}", nil)
+          @project.repository.scm.webdav_move(@project, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "moved/renamed #{File.basename(dest_path)}", nil)
         end
       else
         pinfo = dest_path.split("/")
@@ -406,7 +407,7 @@ module Railsdav
       if @container.is_a?(Redmine::Scm::Adapters::Entry)
         svnpath = @setting.subversion_only ? "" : @setting.subversion_label
         if @project.repository.scm.respond_to?('webdav_copy')
-          @project.repository.scm.webdav_copy(@project, @container.path, dest_path[(svnpath.length)..-1], "copied #{File.basename(dest_path)}", nil)
+          @project.repository.scm.webdav_copy(@project, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "copied #{File.basename(dest_path)}", nil)
         end
       else
         raise ForbiddenError unless !@isdir
@@ -436,42 +437,23 @@ module Railsdav
       end
     end
 
-    def svn_target(repository, path = '')
-      self.class.svn_target(repository, path)
+    def self.with_leading_slash(path)
+       path ||= ''
+      (path[0,1]!="/") ? "/#{path}" : path
     end
-
-    def self.svn_target(repository, path = '')
-      base = repository.url
-      base = base.sub(/^.*:\/\/[^\/]*\//,"file:///svnroot/")
-      uri = "#{base}/#{path}"
-      uri = URI.escape(URI.escape(uri), '[]')
-      shell_quote(uri.gsub(/[?<>\*]/, ''))
+    def self.without_leading_slash(path)
+      path ||= ''
+      path.gsub(%r{^/+}, '')
     end
-
-    def self.gettmpdir(create = true)
-      tmpdir = Dir.tmpdir
-      t = Time.now.strftime("%Y%m%d")
-      n = nil
-      begin
-        path = "#{tmpdir}/#{t}-#{$$}-#{rand(0x100000000).to_s(36)}"
-        path << "-#{n}" if n
-        Dir.mkdir(path, 0700)
-        Dir.rmdir(path) unless create
-      rescue Errno::EEXIST
-        n ||= 0
-        n += 1
-        retry
+    def self.scm_path(project, path)
+      ret = path
+      if project.repository.is_a?(Repository::Subversion)
+        ret = without_leading_slash(path)
       end
-
-      if block_given?
-        begin
-          yield path
-        ensure
-          FileUtils.remove_entry_secure path
-        end
-      else
-        path
+      if project.repository.is_a?(Repository::Filesystem)
+        ret = with_leading_slash(path)
       end
+      ret
     end
 
   end

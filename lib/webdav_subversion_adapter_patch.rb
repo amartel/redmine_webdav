@@ -58,14 +58,18 @@ module SubversionAdapterMethodsWebdav
   def webdav_target(repository, path = '')
     base = repository.url
     base = base.sub(/^.*:\/\/[^\/]*\//,"file:///svnroot/")
-    uri = "#{base}/#{path}"
+    if path.empty?
+      uri = base
+    else
+      uri = "#{base}/#{path}"
+    end
     uri = URI.escape(URI.escape(uri), '[]')
     shell_quote(uri.gsub(/[?<>\*]/, ''))
   end
 
   def webdav_upload(project, path, content, comments, identifier)
     rev = identifier ? "@{identifier}" : ""
-    folder_path = File.dirname(path)
+    folder_path = (path =~ /\// ) ? File.dirname(path) : ""
     filename = File.basename(path)
     container =  entries(folder_path, identifier)
     if container
@@ -84,7 +88,7 @@ module SubversionAdapterMethodsWebdav
 
         entry = entries(path, identifier)
         if entry
-          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} update #{File.join(dir, filename)} --username #{User.current.login}"
+          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} update '#{File.join(dir, filename)}' --username #{User.current.login}"
           shellout(cmd)
           error = true if ($? != 0)
         end
@@ -94,7 +98,7 @@ module SubversionAdapterMethodsWebdav
         end
 
         if !entry
-          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} add #{File.join(dir, filename)} --username #{User.current.login}"
+          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} add '#{File.join(dir, filename)}' --username #{User.current.login}"
           shellout(cmd)
           error = true if ($? != 0)
         end

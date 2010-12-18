@@ -1,3 +1,7 @@
+0.2.1 :
+fixed: plugin doesn't work with subversion when the repository url is not the root repository url
+fixed: can't add a file to subversion repository when filename contains space(s) 
+
 0.2 : 2010-10-06
 new: add lock (contribution from Xabier Elkano)
 
