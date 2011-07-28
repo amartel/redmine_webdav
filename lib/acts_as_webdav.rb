@@ -80,10 +80,10 @@ module Railsdav
 
         def rootwebdav
           raise UnknownWebDavMethodError unless (request.method == :propfind || request.method == :options)
+          set_depth
           if request.method == :options
             webdav_options
           else
-
             begin
               resources = Project.find(:all, :conditions => Project.visible_by(User.current))
               href = url_for(:only_path => true, :path_info => params[:path_info])
@@ -110,24 +110,26 @@ module Railsdav
               xml << "</D:propstat>"
               xml << "</D:response>"
 
-              resources.each do |project|
-                if @user.allowed_to?(:webdav_access, project)
-                  xml << "<D:response>"
-                  xml << "<D:href>" << File.join(href, URI.escape(project.identifier)) << "</D:href>"
-                  xml << "<D:propstat><D:prop>"
-                  xml << "<D:displayname>#{project.identifier}</D:displayname>"
-                  xml << "<D:creationdate>#{project.created_on.xmlschema}</D:creationdate>"
-                  xml << "<D:getlastmodified>#{project.updated_on.httpdate}</D:getlastmodified>"
-                  xml << "<D:getetag>1-0-#{project.created_on.to_i}</D:getetag>"
-                  xml << "<D:getcontenttype>httpd/unix-directory</D:getcontenttype>"
-                  xml << "<D:getcontentlength>0</D:getcontentlength>"
-                  xml << "<D:resourcetype>"
-                  xml << "<D:collection/>"
-                  xml << "</D:resourcetype>"
-                  xml << "</D:prop>"
-                  xml << "<D:status>HTTP/1.1 200 OK</D:status>"
-                  xml << "</D:propstat>"
-                  xml << "</D:response>"
+              if @depth > 0
+                resources.each do |project|
+                  if @user.allowed_to?(:webdav_access, project)
+                    xml << "<D:response>"
+                    xml << "<D:href>" << File.join(href, URI.escape(project.identifier)) << "</D:href>"
+                    xml << "<D:propstat><D:prop>"
+                    xml << "<D:displayname>#{project.identifier}</D:displayname>"
+                    xml << "<D:creationdate>#{project.created_on.xmlschema}</D:creationdate>"
+                    xml << "<D:getlastmodified>#{project.updated_on.httpdate}</D:getlastmodified>"
+                    xml << "<D:getetag>1-0-#{project.created_on.to_i}</D:getetag>"
+                    xml << "<D:getcontenttype>httpd/unix-directory</D:getcontenttype>"
+                    xml << "<D:getcontentlength>0</D:getcontentlength>"
+                    xml << "<D:resourcetype>"
+                    xml << "<D:collection/>"
+                    xml << "</D:resourcetype>"
+                    xml << "</D:prop>"
+                    xml << "<D:status>HTTP/1.1 200 OK</D:status>"
+                    xml << "</D:propstat>"
+                    xml << "</D:response>"
+                  end
                 end
               end
               xml << "</D:multistatus>"
@@ -140,7 +142,11 @@ module Railsdav
         end
 
         def webdavnf
-          render :nothing => true, :status => 404
+          if request.method == :options
+            webdav_options
+          else
+            render :nothing => true, :status => 404
+          end
         end
 
         private

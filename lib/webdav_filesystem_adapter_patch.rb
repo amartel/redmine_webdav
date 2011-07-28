@@ -37,6 +37,21 @@ module FilesystemAdapterMethodsWebdav
       error = false
 
       begin
+  
+        if ! (File.basename(path) =~ /^\./ )
+        rev = -1
+        rev = project.repository.latest_changeset.revision.to_i if project.repository.latest_changeset
+        rev = rev + 1
+        action = "A"
+        action = "M" if File.exists?(File.join(project.repository.url, folder_path, filename)) 
+        changeset = Changeset.create(:repository => project.repository,
+                                                     :revision => rev, 
+                                                     :committer => User.current.login, 
+                                                     :committed_on => Time.now,
+                                                     :comments => comments)
+        Change.create( :changeset => changeset, :action => action, :path => File.join("/", folder_path, filename))
+          end
+                                                   
         File.open(File.join(project.repository.url, folder_path, filename), "wb") do |f|
           f.write(content)
         end
@@ -44,7 +59,8 @@ module FilesystemAdapterMethodsWebdav
           metapathtarget = File.join(project.repository.url, folder_path, filename).sub(/\/files\//, "/attributes/")
           FileUtils.mkdir_p File.dirname(metapathtarget)
           File.open(metapathtarget, "w") do |f|
-            f.write(User.current)
+            f.write("#{User.current}\n")
+            f.write("#{rev}\n")
           end
         end
       rescue
@@ -70,6 +86,18 @@ module FilesystemAdapterMethodsWebdav
       error = false
 
       begin
+        if ! (File.basename(path) =~ /^\./ )
+        rev = -1
+        rev = project.repository.latest_changeset.revision.to_i if project.repository.latest_changeset
+        rev = rev + 1
+        changeset = Changeset.create(:repository => project.repository,
+                                                     :revision => rev, 
+                                                     :committer => User.current.login, 
+                                                     :committed_on => Time.now,
+                                                     :comments => comments)
+        Change.create( :changeset => changeset, :action => 'D', :path => File.join("/", path))
+        end
+                                                   
         if File.directory?(fullpath)
           FileUtils.remove_entry_secure fullpath
         else
@@ -92,6 +120,17 @@ module FilesystemAdapterMethodsWebdav
     return -1 if webdav_invalid_path(path)
     error = false
     begin
+      if ! (File.basename(path) =~ /^\./ )
+      rev = -1
+      rev = project.repository.latest_changeset.revision.to_i if project.repository.latest_changeset
+      rev = rev + 1
+      changeset = Changeset.create(:repository => project.repository,
+                                                   :revision => rev, 
+                                                   :committer => User.current.login, 
+                                                   :committed_on => Time.now,
+                                                   :comments => comments)
+      Change.create( :changeset => changeset, :action => 'A', :path => File.join("/", path))
+      end
       Dir.mkdir(File.join(project.repository.url, path))
     rescue
       error = true
@@ -109,6 +148,18 @@ module FilesystemAdapterMethodsWebdav
     if File.exist?(fullpath) && path != "/"
       error = false
       begin
+        if !(File.basename(path) =~ /^\./ )
+        rev = -1
+        rev = project.repository.latest_changeset.revision.to_i if project.repository.latest_changeset
+        rev = rev + 1
+        changeset = Changeset.create(:repository => project.repository,
+                                                     :revision => rev, 
+                                                     :committer => User.current.login, 
+                                                     :committed_on => Time.now,
+                                                     :comments => comments)
+        Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
+        end
+        
         FileUtils.move fullpath, File.join(project.repository.url, dest_path)
         if metapath
           metapathfull = fullpath.sub(/\/files\//, "/attributes/")
@@ -132,6 +183,18 @@ module FilesystemAdapterMethodsWebdav
     if File.exist?(fullpath) && path != "/"
       error = false
       begin
+        if ! (File.basename(path) =~ /^\./ )
+        rev = -1
+        rev = project.repository.latest_changeset.revision.to_i if project.repository.latest_changeset
+        rev = rev + 1
+        changeset = Changeset.create(:repository => project.repository,
+                                                     :revision => rev, 
+                                                     :committer => User.current.login, 
+                                                     :committed_on => Time.now,
+                                                     :comments => comments)
+        Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
+        end
+        
         FileUtils.cp_r fullpath, File.join(project.repository.url, dest_path)
         if metapath
           metapathfull = fullpath.sub(/\/files\//, "/attributes/")

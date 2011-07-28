@@ -1,9 +1,9 @@
 h1. Introduction
 
-This WebDav plugin is mainly a POC (proof of concept) for accessing files and documents using WebDav protocol. 
+This WebDav plugin was mainly a POC (proof of concept) for accessing files and documents using WebDav protocol. 
 This plugin is a fork of this existing railsdav plugin (<a href="http://github.com/funkensturm/railsdav">railsdav</a>) with some modifications to make it run with REDMINE.
 
-This was done using REDMINE trunk r3826 (=> 0.9.5 +) but any release after 0.9 should work. Last tested revision is r4029 (1.0.1)
+This was done using REDMINE trunk r3826 (=> 0.9.5 +) but any release after 0.9 should work. Last tested revision is r5506 (1.1.2)
 
 About subversion support:
 To commit changes in Subversion, the plugin opens the repository with the file protocol. For this reason, you need the following:
@@ -97,6 +97,14 @@ For WindowsXP:
 * enter your credentials (login/password)
 * Click Finish
 
+For Windows 7:
+* Open *Computer*.
+* Click *Map network drive...*.
+* Use *http://myserver/redmine/webdav* as folder
+* Don't forget to check "Connect using different credentials"
+* Click Finish
+* enter your credentials (login/password)
+* You're in !!!
 
 
 

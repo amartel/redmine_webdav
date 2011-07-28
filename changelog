@@ -1,4 +1,8 @@
-0.2.1 :
+0.2.2 : 2011
+fixed: Windows 7 is now supported (using "Map network drive...")
+new: changesets are now created when using filesystem repository
+
+0.2.1 : 2010-12-18
 fixed: plugin doesn't work with subversion when the repository url is not the root repository url
 fixed: can't add a file to subversion repository when filename contains space(s) 
 
