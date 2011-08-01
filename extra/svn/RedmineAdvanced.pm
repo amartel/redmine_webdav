@@ -439,31 +439,37 @@ sub authenticate_user {
    my $pass_digest = Digest::SHA1::sha1_hex($redmine_pass);
    my $ret;
 
+   my $cfg =
+     Apache2::Module::get_config( __PACKAGE__, $r->server, $r->per_dir_config );
+
    my $dbh = connect_database($r);
-   my $sth = $dbh->prepare(
-"SELECT hashed_password, auth_source_id FROM users WHERE users.status=1 AND login=? "
-   );
+   my $sth =
+     $dbh->prepare(
+"SELECT hashed_password, salt, auth_source_id, id FROM users WHERE users.status=1 AND login=? "
+     );
 
    $sth->execute($redmine_user);
-   while ( my ( $hashed_password, $auth_source_id, $permissions ) =
+   while ( my ( $hashed_password, $salt, $auth_source_id, $user_id ) =
       $sth->fetchrow_array )
    {
 
       #Check authentication
       unless ($auth_source_id) {
-         if ( $hashed_password eq $pass_digest ) {
+         my $salted_password = Digest::SHA1::sha1_hex($salt.$pass_digest);
+         if ( $hashed_password eq $salted_password ) {
             $ret = 1;
          }
       }
       elsif ($CanUseLDAPAuth) {
-         my $sthldap = $dbh->prepare(
+         my $sthldap =
+           $dbh->prepare(
 "SELECT host,port,tls,account,account_password,base_dn,attr_login from auth_sources WHERE id = ?;"
-         );
+           );
          $sthldap->execute($auth_source_id);
          while ( my @rowldap = $sthldap->fetchrow_array ) {
             my $ldap = Authen::Simple::LDAP->new(
-               host => ( $rowldap[2] eq "1" || $rowldap[2] eq "t" )
-               ? "ldaps://$rowldap[0]:$rowldap[1]"
+               host => ( $rowldap[2] == 1 || $rowldap[2] eq "t" )
+               ? "ldaps://$rowldap[0]"
                : $rowldap[0],
                port   => $rowldap[1],
                basedn => $rowldap[5],
@@ -476,8 +482,12 @@ sub authenticate_user {
          }
          $sthldap->finish();
       }
+      if ( $cfg->{RedmineFailedAttempts} ) {
+         failed_attempts( $user_id, $ret, $cfg, $r );
+      }
    }
    $sth->finish();
+
    $dbh->disconnect();
 
    $ret;
