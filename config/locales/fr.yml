@@ -3,7 +3,7 @@ fr:
   webdav: WebDAV
   permission_webdav_settings: Configurer WEBDAV
   permission_webdav_access: Utiliser WEBDAV
-  subversion_only_info: "Désactive le niveau intermédiaire files/documents/subversion et ne gère que les fichiers du dépôt"
+  subversion_only_info: "Désactive le niveau intermédiaire files/documents/depot et ne gère que les fichiers du dépôt"
   subversion_enabled_info: "uniquement s'il s'agit d'un dépôt Subversion résidant sur le serveur"
   field_files_enabled: "Fichiers"
   field_documents_enabled: "Documents"
@@ -14,3 +14,6 @@ fr:
   field_subversion_label: "Dossier"
   field_macosx_write: "Ecriture MacOSX"
   macosx_write_info: "Autorise l'accès en écriture pour MacOSX (Beaucoup de fichiers générés!!)"
+  files_label: "files"
+  documents_label: "documents"
+  subversion_label: "depot"

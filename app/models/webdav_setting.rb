@@ -10,9 +10,9 @@ class WebdavSetting < ActiveRecord::Base
       setting.documents_enabled = true
       setting.subversion_enabled = false
       setting.subversion_only = false
-      setting.files_label = "files"
-      setting.documents_label = "documents"
-      setting.subversion_label = "subversion"
+      setting.files_label = l(:files_label)
+      setting.documents_label = l(:documents_label)
+      setting.subversion_label = l(:subversion_label)
       setting.macosx_write = false
       setting.save!      
     end

@@ -3,7 +3,7 @@ en:
   webdav: WebDAV
   permission_webdav_settings: Manage WEBDAV
   permission_webdav_access: Use WEBDAV
-  subversion_only_info: "Disable first directories tree level (files/documents/subversion) and only manage files from repository"
+  subversion_only_info: "Disable first directories tree level (files/documents/repository) and only manage files from repository"
   subversion_enabled_info: "Only if you have a local subversion repository on this server"
   field_files_enabled: "Files"
   field_documents_enabled: "Documents"
@@ -14,3 +14,6 @@ en:
   field_subversion_label: "Folder"
   field_macosx_write: "MacOSX writes"
   macosx_write_info: "Grants MacOSX to write using WEBDAV (lot of files will be created!!)"
+  files_label: "files"
+  documents_label: "documents"
+  subversion_label: "repository"

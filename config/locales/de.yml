@@ -14,4 +14,6 @@ de:
   field_subversion_label: "Ordner"
   field_macosx_write: "MacOSX Schreibzugriff"
   macosx_write_info: "Erlaube MacOSX das Schreiben per WEBDAV. (Achtung: Dadurch werden viele Dateien erstellt!!)"
-  
+  files_label: "Dateien"
+  documents_label: "Dokumente"
+  subversion_label: "Repository"

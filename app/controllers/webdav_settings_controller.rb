@@ -37,9 +37,9 @@ class WebdavSettingsController < ApplicationController
         setting.subversion_enabled = subversion_enabled
         setting.subversion_only = subversion_only
         setting.macosx_write = macosx_write
-        setting.files_label = params[:setting][:files_label].empty? ? "files" : params[:setting][:files_label]
-        setting.documents_label = params[:setting][:documents_label].empty? ? "documents" : params[:setting][:documents_label]
-        setting.subversion_label = params[:setting][:subversion_label].empty? ? "subversion" : params[:setting][:subversion_label]
+        setting.files_label = params[:setting][:files_label].empty? ? l(:files_label) : params[:setting][:files_label]
+        setting.documents_label = params[:setting][:documents_label].empty? ? l(:documents_label) : params[:setting][:documents_label]
+        setting.subversion_label = params[:setting][:subversion_label].empty? ? l(:subversion_label) : params[:setting][:subversion_label]
         setting.save!
       end
       flash[:notice] = l(:notice_successful_update)
