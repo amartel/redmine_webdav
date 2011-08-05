@@ -85,7 +85,7 @@ module Railsdav
             webdav_options
           else
             begin
-              resources = Project.find(:all, :conditions => Project.visible_by(User.current))
+              resources = Project.find(:all, :conditions => Project.visible_condition(User.current))
               href = url_for(:only_path => true, :path_info => params[:path_info])
               first = resources.first
 
