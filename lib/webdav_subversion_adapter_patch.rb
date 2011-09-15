@@ -57,7 +57,7 @@ module SubversionAdapterMethodsWebdav
 
   def webdav_target(repository, path = '')
     base = repository.url
-    base = base.sub(/^.*:\/\/[^\/]*\//,"file:///svnroot/")
+    base = base.sub(/^.*:\/\/[^\/]*\//,"file:///svnroot/") if !base.match('^file:')
     if path.empty?
       uri = base
     else
@@ -68,7 +68,7 @@ module SubversionAdapterMethodsWebdav
   end
 
   def webdav_upload(project, path, content, comments, identifier)
-    rev = identifier ? "@{identifier}" : ""
+    rev = identifier ? "@#{identifier}" : ""
     folder_path = (path =~ /\// ) ? File.dirname(path) : ""
     filename = File.basename(path)
     container =  entries(folder_path, identifier)
@@ -88,7 +88,7 @@ module SubversionAdapterMethodsWebdav
 
         entry = entries(path, identifier)
         if entry
-          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} update '#{File.join(dir, filename)}' --username #{User.current.login}"
+          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} update \"#{File.join(dir, filename)}\" --username #{User.current.login}"
           shellout(cmd)
           error = true if ($? != 0)
         end
@@ -98,7 +98,7 @@ module SubversionAdapterMethodsWebdav
         end
 
         if !entry
-          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} add '#{File.join(dir, filename)}' --username #{User.current.login}"
+          cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} add \"#{File.join(dir, filename)}\" --username #{User.current.login}"
           shellout(cmd)
           error = true if ($? != 0)
         end
@@ -122,7 +122,7 @@ module SubversionAdapterMethodsWebdav
 
   def webdav_delete(project, path, comments, identifier)
     return -1 if path.nil? || path.empty?
-    rev = identifier ? "@{identifier}" : ""
+    rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
     if container && path != "/"
       error = false
@@ -142,7 +142,7 @@ module SubversionAdapterMethodsWebdav
 
   def webdav_mkdir(project, path, comments, identifier)
     return -1 if path.nil? || path.empty?
-    rev = identifier ? "@{identifier}" : ""
+    rev = identifier ? "@#{identifier}" : ""
     error = false
     webdav_gettmpdir(false) do |dir|
       commentfile = "#{dir}.txt"
@@ -159,7 +159,7 @@ module SubversionAdapterMethodsWebdav
 
   def webdav_move(project, path, dest_path, comments, identifier)
     return -1 if path.nil? || path.empty?
-    rev = identifier ? "@{identifier}" : ""
+    rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
     if container && path != "/"
       error = false
@@ -179,7 +179,7 @@ module SubversionAdapterMethodsWebdav
 
   def webdav_copy(project, path, dest_path, comments, identifier)
     return -1 if path.nil? || path.empty?
-    rev = identifier ? "@{identifier}" : ""
+    rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
     if container && path != "/"
       error = false
