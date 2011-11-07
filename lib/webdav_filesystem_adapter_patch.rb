@@ -118,6 +118,8 @@ module FilesystemAdapterMethodsWebdav
   def webdav_mkdir(project, path, comments, identifier)
     return -1 if path.nil? || path.empty?
     return -1 if webdav_invalid_path(path)
+    metapath = (project.repository.url =~ /\/files$/  && File.exist?(project.repository.url.sub(/\/files/, "/attributes")))
+    fullpath = File.join(project.repository.url, path)
     error = false
     begin
       if ! (File.basename(path) =~ /^\./ )
@@ -132,6 +134,10 @@ module FilesystemAdapterMethodsWebdav
       Change.create( :changeset => changeset, :action => 'A', :path => File.join("/", path))
       end
       Dir.mkdir(File.join(project.repository.url, path))
+      if metapath
+        metapathtarget = fullpath.sub(/\/files\//, "/attributes/")
+        Dir.mkdir(metapathtarget)
+      end
     rescue
       error = true
     end
