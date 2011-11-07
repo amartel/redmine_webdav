@@ -95,7 +95,7 @@ module Railsdav
 
     def self.initialize_by_path_and_href(project, path, href)
       do_file_action do
-        r = new(project, path, href)
+        r = new(project, path, FileResource.specialchar(href))
         r if r.valid?
       end
     end
@@ -191,13 +191,13 @@ module Railsdav
         @project.name
       when 1
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          @container.name
+          FileResource.specialchar(@container.name)
         else
           @container
         end
       else
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          @container.name
+          FileResource.specialchar(@container.name)
         elsif @isdir
           if @container.is_a?(Document)
             @container.title
@@ -455,8 +455,11 @@ module Railsdav
       end
       ret
     end
+    def self.specialchar(value)
+      value.gsub(/&/,"%26")
+    end
     def self.escape(filename)
-      URI.escape(filename.gsub(/\+/,"@*@")).gsub(/@\*@/,"%2B")
+      specialchar(URI.escape(filename.gsub(/\+/,"@*@")).gsub(/@\*@/,"%2B"))
     end
 
   end
