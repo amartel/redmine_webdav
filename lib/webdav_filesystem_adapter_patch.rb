@@ -205,7 +205,7 @@ module FilesystemAdapterMethodsWebdav
         if metapath
           metapathfull = fullpath.sub(/\/files\//, "/attributes/")
           metapathtarget = File.join(project.repository.url, dest_path).sub(/\/files\//, "/attributes/")
-          FileUtils.copy metapathfull, metapathtarget if File.exist?(metapathfull)
+          FileUtils.cp_r metapathfull, metapathtarget if File.exist?(metapathfull)
         end
       rescue
         error = true
