@@ -188,7 +188,7 @@ module Railsdav
     def displayname
       case @level
       when 0
-        @project.name
+        FileResource.specialchar(@project.name)
       when 1
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
           FileResource.specialchar(@container.name)
