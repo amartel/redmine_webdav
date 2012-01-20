@@ -374,7 +374,8 @@ module Railsdav
           :description => "",
           :author => User.current)
           if a.new_record?
-            a.save
+            #a.save
+            raise InsufficientStorageError
           end
           uploaded_file.close!
           Mailer.deliver_attachments_added([ a ])
