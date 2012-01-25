@@ -11,7 +11,7 @@ module WebDavAttachmentPatch
     # Same as typing in the class
     base.class_eval do
       unloadable # Send unloadable so it will not be unloaded in development
-      alias_method_chain(:before_save, :webdav) 
+      alias_method_chain(:files_to_final_location, :webdav) 
       class << self
         # I dislike alias method chain, it's not the most readable backtraces
 
@@ -44,7 +44,7 @@ module WebDavAttachmentPatch
     end
 
     #no change except @temp_file.size >= 0
-    def before_save_with_webdav
+    def files_to_final_location_with_webdav
       if @temp_file && (@temp_file.size >= 0)
         logger.debug("saving '#{self.diskfile}'")
         md5 = Digest::MD5.new

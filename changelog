@@ -1,3 +1,6 @@
+0.3.0 : 2012-01-25
+new: requires redmine 1.3.0 or higher
+
 0.2.3 : 2011-08-05
 new: default values for foldername are localized (contribution from Terence MILL)
 changed: Now use salt in authentication => redmine older than 1.2.0 is no more supported... 
