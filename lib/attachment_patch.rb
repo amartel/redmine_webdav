@@ -57,6 +57,7 @@ module WebDavAttachmentPatch
         end
         self.digest = md5.hexdigest
       end
+      @temp_file = nil
       # Don't save the content type if it's longer than the authorized length
       if self.content_type && self.content_type.length > 255
         self.content_type = nil
