@@ -28,17 +28,23 @@ module Railsdav
 
     def initialize(*args)
       #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
-      @href=""
       @project = args.first
-      @setting = WebdavSetting.find_or_create @project.id
+      @setting ||= WebdavSetting.find_or_create @project.id
       pinfo=args[1].split("/")
+      @href = args[2]
+      @container = nil
+      @container = args[3] if args[3]
+      @file = nil
+      @file = args[4] if args[4]
       @level = pinfo.length
       @isdir = true
       if @level == 0
         @container = @project
       end
       if @setting.subversion_only && @level > 0
-        @container =  @project.repository.entry(FileResource.scm_path(@project, args[1]), @project.repository.default_branch)
+        @container = nil
+        @container = args[4] if args[4]
+        @container ||=  @project.repository.entry(FileResource.scm_path(@project, args[1]), @project.repository.default_branch)
         if @container
           @isdir = @container.is_dir?
           @stat = @container
@@ -58,16 +64,18 @@ module Railsdav
         end
         if @level > 1
           if pinfo[0] == @setting.files_label
-            @container = @project.versions.find_by_name(pinfo[1])
+            @container ||= @project.versions.find_by_name(pinfo[1])
             if !@container && @level==2
-              @file = @project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
+              @file ||= @project.attachments.find(:first, :conditions => [ "filename = ?", pinfo[1] ])
               @container = @project
               @isdir = false
             end
           elsif pinfo[0] == @setting.documents_label
-            @container = @project.documents.find_by_title(pinfo[1])
+            @container ||= @project.documents.find_by_title(pinfo[1])
           elsif pinfo[0] == @setting.subversion_label
-            @container =  @project.repository.entry(FileResource.scm_path(@project, args[1][(@setting.subversion_label.length)..-1]), @project.repository.default_branch)
+            @container = nil
+            @container = args[4] if args[4]
+            @container ||=  @project.repository.entry(FileResource.scm_path(@project, args[1][(@setting.subversion_label.length)..-1]), @project.repository.default_branch)
             if @container
               @isdir = @container.is_dir?
               @stat = @container
@@ -80,7 +88,7 @@ module Railsdav
         if @level > 2 && pinfo[0] != @setting.subversion_label
           @isdir = false
           if @container
-            @file = @container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
+            @file ||= @container.attachments.find(:first, :conditions => [ "filename = ?", pinfo[2] ])
           end
         end
       end
@@ -88,7 +96,6 @@ module Railsdav
         @stat = File.lstat(@file.diskfile)
       end
       if args.last.is_a?(String)
-        @href = args.last
         @href = File.join(@href, '') if collection?
       end
     end
@@ -114,7 +121,7 @@ module Railsdav
       when 0
         if (@setting.subversion_only && @setting.subversion_enabled)
           @project.repository.entries(FileResource.scm_path(@project, "/"), @project.repository.default_branch).each do |entry|
-            resources << self.class.new(@project, entry.name, File.join(@href, FileResource.escape(entry.name)))
+            resources << self.class.new(@project, entry.name, File.join(@href, FileResource.escape(entry.name)), nil, entry)
           end
         else
           resources << self.class.new(@project, @setting.files_label, File.join(@href, FileResource.escape(@setting.files_label))) if (@setting.files_enabled && User.current.allowed_to?(:view_files, @project))
@@ -125,24 +132,24 @@ module Railsdav
         if (@setting.subversion_only && @setting.subversion_enabled)
           if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
             @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
-              resources << self.class.new(@project, File.join("/", @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)))
+              resources << self.class.new(@project, File.join("/", @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)), nil, entry)
             end
           end
         else
           if @container == "files"
             @project.versions.each do |version|
-              resources << self.class.new(@project, File.join(@setting.files_label, version.name), File.join(@href, FileResource.escape(version.name)))
+              resources << self.class.new(@project, File.join(@setting.files_label, version.name), File.join(@href, FileResource.escape(version.name)), nil, version)
             end
             @project.attachments.each do |attach|
-              resources << self.class.new(@project, File.join(@setting.files_label, attach.filename), File.join(@href, FileResource.escape(attach.filename)))
+              resources << self.class.new(@project, File.join(@setting.files_label, attach.filename), File.join(@href, FileResource.escape(attach.filename)), nil, attach)
             end
           elsif @container == "documents"
             @project.documents.each do |document|
-              resources << self.class.new(@project, File.join(@setting.documents_label, document.title), File.join(@href, FileResource.escape(document.title)))
+              resources << self.class.new(@project, File.join(@setting.documents_label, document.title), File.join(@href, FileResource.escape(document.title)), nil, document)
             end
           elsif @container == "scm"
             @project.repository.entries(FileResource.scm_path(@project, "/"), @project.repository.default_branch).each do |entry|
-              resources << self.class.new(@project, File.join(@setting.subversion_label, entry.name), File.join(@href, FileResource.escape(entry.name)))
+              resources << self.class.new(@project, File.join(@setting.subversion_label, entry.name), File.join(@href, FileResource.escape(entry.name)), nil, entry)
             end
           end
         end
@@ -151,7 +158,7 @@ module Railsdav
           if @container.is_a?(Redmine::Scm::Adapters::Entry)
             svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
             @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
-              resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)))
+              resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)), nil, entry)
             end
           else
             if @container.is_a?(Document)
@@ -162,7 +169,7 @@ module Railsdav
               root=@setting.files_label
             end
             @container.attachments.each do |attach|
-              resources << self.class.new(@project, File.join(root,foldername,attach.filename), File.join(@href, FileResource.escape(attach.filename)))
+              resources << self.class.new(@project, File.join(root,foldername,attach.filename), File.join(@href, FileResource.escape(attach.filename)), @container, attach)
             end
           end
         end
@@ -170,7 +177,7 @@ module Railsdav
         if @isdir && @container.is_a?(Redmine::Scm::Adapters::Entry)
           svnpath = @setting.subversion_only ? "/" : @setting.subversion_label
           @project.repository.entries(FileResource.scm_path(@project, @container.path), @project.repository.default_branch).each do |entry|
-            resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)))
+            resources << self.class.new(@project, File.join(svnpath, @container.path, entry.name), File.join(@href, FileResource.escape(entry.name)), nil, entry)
           end
         end
       end
