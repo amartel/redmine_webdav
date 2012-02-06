@@ -67,7 +67,7 @@ module SubversionAdapterMethodsWebdav
     shell_quote(uri.gsub(/[?<>\*]/, ''))
   end
 
-  def webdav_upload(project, path, content, comments, identifier)
+  def webdav_upload(repository, path, content, comments, identifier)
     rev = identifier ? "@#{identifier}" : ""
     folder_path = (path =~ /\// ) ? File.dirname(path) : ""
     filename = File.basename(path)
@@ -82,7 +82,7 @@ module SubversionAdapterMethodsWebdav
           f.flush
         }
 
-        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} checkout #{webdav_target(project.repository, folder_path)}#{rev} #{dir} --depth empty --username #{User.current.login}"
+        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} checkout #{webdav_target(repository, folder_path)}#{rev} #{dir} --depth empty --username #{User.current.login}"
         shellout(cmd)
         error = true if ($? != 0)
 
@@ -120,7 +120,7 @@ module SubversionAdapterMethodsWebdav
     end
   end
 
-  def webdav_delete(project, path, comments, identifier)
+  def webdav_delete(repository, path, comments, identifier)
     return -1 if path.nil? || path.empty?
     rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
@@ -132,7 +132,7 @@ module SubversionAdapterMethodsWebdav
           f.write(comments)
           f.flush
         }
-        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} delete #{webdav_target(project.repository, path)}#{rev}  -F #{commentfile} --username #{User.current.login}"
+        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} delete #{webdav_target(repository, path)}#{rev}  -F #{commentfile} --username #{User.current.login}"
         shellout(cmd)
         error = true if ($? != 0 && $? != 256)
       end
@@ -140,7 +140,7 @@ module SubversionAdapterMethodsWebdav
     end
   end
 
-  def webdav_mkdir(project, path, comments, identifier)
+  def webdav_mkdir(repository, path, comments, identifier)
     return -1 if path.nil? || path.empty?
     rev = identifier ? "@#{identifier}" : ""
     error = false
@@ -150,14 +150,14 @@ module SubversionAdapterMethodsWebdav
         f.write(comments)
         f.flush
       }
-      cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} mkdir #{webdav_target(project.repository, path)}#{rev} -F #{commentfile} --username #{User.current.login}"
+      cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} mkdir #{webdav_target(repository, path)}#{rev} -F #{commentfile} --username #{User.current.login}"
       shellout(cmd)
       error = true if ($? != 0 && $? != 256)
     end
     return error ? 1 : 0
   end
 
-  def webdav_move(project, path, dest_path, comments, identifier)
+  def webdav_move(repository, path, dest_path, comments, identifier)
     return -1 if path.nil? || path.empty?
     rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
@@ -169,7 +169,7 @@ module SubversionAdapterMethodsWebdav
           f.write(comments)
           f.flush
         }
-        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} move #{webdav_target(project.repository, path)}#{rev}  #{webdav_target(project.repository, dest_path)} -F #{commentfile} --username #{User.current.login}"
+        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} move #{webdav_target(repository, path)}#{rev}  #{webdav_target(repository, dest_path)} -F #{commentfile} --username #{User.current.login}"
         shellout(cmd)
         error = true if ($? != 0 && $? != 256)
       end
@@ -177,7 +177,7 @@ module SubversionAdapterMethodsWebdav
     end
   end
 
-  def webdav_copy(project, path, dest_path, comments, identifier)
+  def webdav_copy(repository, path, dest_path, comments, identifier)
     return -1 if path.nil? || path.empty?
     rev = identifier ? "@#{identifier}" : ""
     container =  entries(path, identifier)
@@ -189,7 +189,7 @@ module SubversionAdapterMethodsWebdav
           f.write(comments)
           f.flush
         }
-        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} copy #{webdav_target(project.repository, path)}#{rev}  #{webdav_target(project.repository, dest_path)} -F #{commentfile} --username #{User.current.login}"
+        cmd = "#{Redmine::Scm::Adapters::SubversionAdapter::SVN_BIN} copy #{webdav_target(repository, path)}#{rev}  #{webdav_target(repository, dest_path)} -F #{commentfile} --username #{User.current.login}"
         shellout(cmd)
         error = true if ($? != 0 && $? != 256)
       end

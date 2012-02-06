@@ -305,7 +305,7 @@ module Railsdav
       self.class.do_file_action do
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
           if @project.repository.scm.respond_to?('webdav_delete')
-            @project.repository.scm.webdav_delete(@project, FileResource.scm_path(@project, @container.path), "deleted #{File.basename(@container.path)}", nil)
+            @project.repository.scm.webdav_delete(@project.repository, FileResource.scm_path(@project, @container.path), "deleted #{File.basename(@container.path)}", nil)
           end
         elsif @file
           @container.attachments.delete(@file)
@@ -322,7 +322,7 @@ module Railsdav
       if (pinfo[0] == setting.subversion_label || setting.subversion_only)
         svnpath = setting.subversion_only ? "" : setting.subversion_label
         if project.repository.scm.respond_to?('webdav_mkdir')
-          project.repository.scm.webdav_mkdir(project, self.scm_path(project, path[(svnpath.length)..-1]), "added #{File.basename(path)}", nil)
+          project.repository.scm.webdav_mkdir(project.repository, self.scm_path(project, path[(svnpath.length)..-1]), "added #{File.basename(path)}", nil)
         end
       else
         raise ForbiddenError unless pinfo.length == 2
@@ -346,7 +346,7 @@ module Railsdav
         container =  project.repository.entry(path[(svnpath.length)..-1], nil)
         comments = container.nil? ? "added #{File.basename(path)}" : "updated #{File.basename(path)}"
         if project.repository.scm.respond_to?('webdav_upload')
-          project.repository.scm.webdav_upload(project, self.scm_path(project, path[(svnpath.length)..-1]), content, comments, nil)
+          project.repository.scm.webdav_upload(project.repository, self.scm_path(project, path[(svnpath.length)..-1]), content, comments, nil)
         end
       else
         case pinfo.length
@@ -394,7 +394,7 @@ module Railsdav
       if @container.is_a?(Redmine::Scm::Adapters::Entry)
         svnpath = @setting.subversion_only ? "" : @setting.subversion_label
         if @project.repository.scm.respond_to?('webdav_move')
-          @project.repository.scm.webdav_move(@project, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "moved/renamed #{File.basename(dest_path)}", nil)
+          @project.repository.scm.webdav_move(@project.repository, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "moved/renamed #{File.basename(dest_path)}", nil)
         end
       else
         pinfo = dest_path.split("/")
@@ -415,7 +415,7 @@ module Railsdav
       if @container.is_a?(Redmine::Scm::Adapters::Entry)
         svnpath = @setting.subversion_only ? "" : @setting.subversion_label
         if @project.repository.scm.respond_to?('webdav_copy')
-          @project.repository.scm.webdav_copy(@project, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "copied #{File.basename(dest_path)}", nil)
+          @project.repository.scm.webdav_copy(@project.repository, FileResource.scm_path(@project, @container.path), FileResource.scm_path(@project, dest_path[(svnpath.length)..-1]), "copied #{File.basename(dest_path)}", nil)
         end
       else
         raise ForbiddenError unless !@isdir
