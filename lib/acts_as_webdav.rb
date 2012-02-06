@@ -63,7 +63,7 @@ module Railsdav
       module InstanceMethods
         def webdav
           method = "webdav_#{request.head? ? "head" : request.method}"
-          raise UnknownWebDavMethodError unless respond_to?(method, true)
+          raise NotImplementedError unless respond_to?(method, true)
           begin
             set_depth
             set_path_info
@@ -79,7 +79,7 @@ module Railsdav
         end
 
         def rootwebdav
-          raise UnknownWebDavMethodError unless (request.method == :propfind || request.method == :options)
+          raise NotImplementedError unless (request.method == :propfind || request.method == :options)
           set_depth
           if request.method == :options
             webdav_options

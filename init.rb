@@ -9,7 +9,7 @@ end
 
 ActionController::Base.send(:extend, Railsdav::Acts::Webdav::ActMethods)
 #WebDAV methods
-WEBDAV_HTTP_METHODS = %w(propfind mkcol move copy lock unlock options delete put proppatch) #you can add other methods here
+WEBDAV_HTTP_METHODS = %w(propfind mkcol move copy lock unlock options delete put proppatch userinfo) #you can add other methods here
 WEBDAV_HTTP_METHODS.each do |method|
   ActionController::Routing::HTTP_METHODS << method.to_sym
 end
@@ -21,7 +21,7 @@ Redmine::Plugin.register :redmine_webdav do
   name 'WebDav plugin'
   author 'Arnaud Martel'
   description 'WebDav plugin for managing files inside projects'
-  version '0.3.0'
+  version '0.3.1'
   requires_redmine :version_or_higher => '1.3.0'
   
   project_module :webdav do

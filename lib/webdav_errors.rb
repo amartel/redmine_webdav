@@ -4,6 +4,10 @@ module Railsdav
   class BaseError < StandardError
   end
 
+  class NotImplementedError < BaseError
+    @@http_status = 501
+    cattr_reader :http_status
+  end
   class LockedError < BaseError
     @@http_status = 423
     cattr_reader :http_status
