@@ -63,8 +63,8 @@ module Railsdav
       module InstanceMethods
         def webdav
           method = "webdav_#{request.head? ? "head" : request.method}"
-          raise NotImplementedError unless respond_to?(method, true)
           begin
+            raise NotImplementedError unless respond_to?(method, true)
             set_depth
             set_path_info
             #            if @path_info.split("/").last[0,1] != "."
@@ -79,12 +79,12 @@ module Railsdav
         end
 
         def rootwebdav
-          raise NotImplementedError unless (request.method == :propfind || request.method == :options)
           set_depth
           if request.method == :options
             webdav_options
           else
             begin
+              raise NotImplementedError unless (request.method == :propfind || request.method == :options)
               #resources = Project.find(:all, :conditions => Project.visible_condition(User.current))
               resources = []
               ms = User.current.memberships
