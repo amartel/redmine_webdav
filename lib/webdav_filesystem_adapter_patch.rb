@@ -39,18 +39,18 @@ module FilesystemAdapterMethodsWebdav
       begin
   
         if (!(File.basename(path) =~ /^\./ ) && repository.supports_all_revisions?)
-        rev = -1
-        rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
-        rev = rev + 1
-        action = "A"
-        action = "M" if File.exists?(File.join(repository.url, folder_path, filename)) 
-        changeset = Changeset.create(:repository => repository,
+          rev = -1
+          rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
+          rev = rev + 1
+          action = "A"
+          action = "M" if File.exists?(File.join(repository.url, folder_path, filename)) 
+          changeset = Changeset.create(:repository => repository,
                                                      :revision => rev, 
                                                      :committer => User.current.login, 
                                                      :committed_on => Time.now,
                                                      :comments => comments)
-        Change.create( :changeset => changeset, :action => action, :path => File.join("/", folder_path, filename))
-          end
+          Change.create( :changeset => changeset, :action => action, :path => File.join("/", folder_path, filename))
+        end
                                                    
         File.open(File.join(repository.url, folder_path, filename), "wb") do |f|
           f.write(content)
@@ -87,15 +87,15 @@ module FilesystemAdapterMethodsWebdav
 
       begin
         if (!(File.basename(path) =~ /^\./ ) && repository.supports_all_revisions?)
-        rev = -1
-        rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
-        rev = rev + 1
-        changeset = Changeset.create(:repository => repository,
+          rev = -1
+          rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
+          rev = rev + 1
+          changeset = Changeset.create(:repository => repository,
                                                      :revision => rev, 
                                                      :committer => User.current.login, 
                                                      :committed_on => Time.now,
                                                      :comments => comments)
-        Change.create( :changeset => changeset, :action => 'D', :path => File.join("/", path))
+          Change.create( :changeset => changeset, :action => 'D', :path => File.join("/", path))
         end
                                                    
         if File.directory?(fullpath)
@@ -123,15 +123,15 @@ module FilesystemAdapterMethodsWebdav
     error = false
     begin
       if (!(File.basename(path) =~ /^\./ ) && repository.supports_all_revisions?)
-      rev = -1
-      rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
-      rev = rev + 1
-      changeset = Changeset.create(:repository => repository,
+        rev = -1
+        rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
+        rev = rev + 1
+        changeset = Changeset.create(:repository => repository,
                                                    :revision => rev, 
                                                    :committer => User.current.login, 
                                                    :committed_on => Time.now,
                                                    :comments => comments)
-      Change.create( :changeset => changeset, :action => 'A', :path => File.join("/", path))
+        Change.create( :changeset => changeset, :action => 'A', :path => File.join("/", path))
       end
       Dir.mkdir(File.join(repository.url, path))
       if metapath
@@ -155,15 +155,15 @@ module FilesystemAdapterMethodsWebdav
       error = false
       begin
         if (!(File.basename(path) =~ /^\./ ) && repository.supports_all_revisions?)
-        rev = -1
-        rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
-        rev = rev + 1
-        changeset = Changeset.create(:repository => repository,
+          rev = -1
+          rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
+          rev = rev + 1
+          changeset = Changeset.create(:repository => repository,
                                                      :revision => rev, 
                                                      :committer => User.current.login, 
                                                      :committed_on => Time.now,
                                                      :comments => comments)
-        Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
+          Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
         end
         
         FileUtils.move fullpath, File.join(repository.url, dest_path)
@@ -190,15 +190,15 @@ module FilesystemAdapterMethodsWebdav
       error = false
       begin
         if (!(File.basename(path) =~ /^\./ ) && repository.supports_all_revisions?)
-        rev = -1
-        rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
-        rev = rev + 1
-        changeset = Changeset.create(:repository => repository,
+          rev = -1
+          rev = repository.latest_changeset.revision.to_i if repository.latest_changeset
+          rev = rev + 1
+          changeset = Changeset.create(:repository => repository,
                                                      :revision => rev, 
                                                      :committer => User.current.login, 
                                                      :committed_on => Time.now,
                                                      :comments => comments)
-        Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
+          Change.create( :changeset => changeset, :action => 'R', :path => File.join("/", dest_path), :from_path => File.join("/", path))
         end
         
         FileUtils.cp_r fullpath, File.join(repository.url, dest_path)
