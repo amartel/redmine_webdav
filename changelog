@@ -1,3 +1,14 @@
+0.3.2 : 2012-03-15
+new: default values are now configurable from Administration -> Plugins -> WebDav plugin 
+
+0.3.1 : 2012-02-06
+fix: upload attachment is broken
+fix: Don't create changes for filesystem SCM if required patches have not been applied
+fix: Add response to USERINFO method
+fix: avoid stacktrace in log when invalid method is used
+new: add support for git smarthttp  in RedmineAdvanced.pm
+
+
 0.3.0 : 2012-01-25
 new: requires redmine 1.3.0 or higher
 

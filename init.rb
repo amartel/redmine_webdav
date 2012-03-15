@@ -21,9 +21,11 @@ Redmine::Plugin.register :redmine_webdav do
   name 'WebDav plugin'
   author 'Arnaud Martel'
   description 'WebDav plugin for managing files inside projects'
-  version '0.3.1'
+  version '0.3.2'
   requires_redmine :version_or_higher => '1.3.0'
-  
+
+  settings :default => {'webdav_file_enabled' => 1, 'webdav_document_enabled' => 1, 'webdav_repository_enabled' => 1}, :partial => 'webdav_settings/settings'
+    
   project_module :webdav do
     permission :webdav_access, :webdav => :webdav
     permission :webdav_settings, {:webdav_settings => [:show, :update]}

@@ -6,14 +6,14 @@ class WebdavSetting < ActiveRecord::Base
     unless setting
       setting = WebdavSetting.new
       setting.project_id = pj_id
-      setting.files_enabled = true
-      setting.documents_enabled = true
-      setting.subversion_enabled = true
-      setting.subversion_only = true
-      setting.files_label = l(:files_label)
-      setting.documents_label = l(:documents_label)
-      setting.subversion_label = l(:subversion_label)
-      setting.macosx_write = false
+      setting.files_enabled = Setting.plugin_redmine_webdav['webdav_file_enabled']
+      setting.documents_enabled = Setting.plugin_redmine_webdav['webdav_document_enabled']
+      setting.subversion_enabled = Setting.plugin_redmine_webdav['webdav_repository_enabled']
+      setting.subversion_only = Setting.plugin_redmine_webdav['webdav_repo_only']
+      setting.files_label = Setting.plugin_redmine_webdav['webdav_file_label'].blank? ? l(:files_label) : Setting.plugin_redmine_webdav['webdav_file_label']
+      setting.documents_label = Setting.plugin_redmine_webdav['webdav_document_label'].blank? ? l(:documents_label) : Setting.plugin_redmine_webdav['webdav_document_label']
+      setting.subversion_label = Setting.plugin_redmine_webdav['webdav_repository_label'].blank? ? l(:subversion_label) : Setting.plugin_redmine_webdav['webdav_repository_label']
+      setting.macosx_write = Setting.plugin_redmine_webdav['webdav_macosx']
       setting.save!      
     end
     return setting

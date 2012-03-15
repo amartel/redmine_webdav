@@ -1,0 +1,43 @@
+Default values for WebDAV plugin.
+
+<p><label>Enable files access</label>
+<%= check_box_tag 'settings[webdav_file_enabled]', 1, @settings['webdav_file_enabled'] %><br />
+<em>check to allow access to files using WebDAV</em>
+</p>
+
+<p><label>folder name for files</label>
+<%= text_field_tag 'settings[webdav_file_label]', @settings['webdav_file_label'], :size => 80 %><br />
+<em>Name of the folder where files will be published</em>
+</p>
+
+<p><label>Enable documents access</label>
+<%= check_box_tag 'settings[webdav_document_enabled]', 1, @settings['webdav_document_enabled'] %><br />
+<em>check to allow access to documents using WebDAV</em>
+</p>
+
+<p><label>folder name for documents</label>
+<%= text_field_tag 'settings[webdav_document_label]', @settings['webdav_document_label'], :size => 80 %><br />
+<em>Name of the folder where documents will be published</em>
+</p>
+
+<p><label>Enable repository access</label>
+<%= check_box_tag 'settings[webdav_repository_enabled]', 1, @settings['webdav_repository_enabled'] %><br />
+<em>check to allow access to repository using WebDAV</em>
+</p>
+
+<p><label>folder name for repository</label>
+<%= text_field_tag 'settings[webdav_repository_label]', @settings['webdav_repository_label'], :size => 80 %><br />
+<em>Name of the folder where repository will be published</em>
+</p>
+
+<p><label>MacOSX writes</label>
+<%= check_box_tag 'settings[webdav_macosx]', 1, @settings['webdav_macosx'] %><br />
+<em>Grants MacOSX to write using WEBDAV (lot of files will be created!!)</em>
+</p>
+
+<p><label>Repository only</label>
+<%= check_box_tag 'settings[webdav_repo_only]', 1, @settings['webdav_repo_only'] %><br />
+<em>Disable first directories tree level (files/documents/repository) and only publish repository</em>
+</p>
+
+
