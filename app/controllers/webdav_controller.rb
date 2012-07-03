@@ -2,13 +2,15 @@ class WebdavController < ApplicationController
 
   acts_as_webdav :resource_model => Webdav
 
+  skip_before_filter :verify_authenticity_token
   before_filter :find_project, :authorize, :find_user
 
   private
   def find_project
     # @project variable must be set before calling the authorize filter
-    if params[:id]
-       @project = Project.find(params[:id])
+    if params[:path_info]
+      project_id = params[:path_info].split('/')[0]
+      @project = Project.find(project_id)
     end
   rescue ActiveRecord::RecordNotFound
     render_404

@@ -19,7 +19,8 @@ module Railsdav
     WEBDAV_PROPERTIES = [ :displayname, :creationdate, :getlastmodified,
       :getetag, :getcontenttype, :getcontentlength ]
 
-    class_inheritable_accessor :file_options
+    #Redmine2.0.1    class_inheritable_accessor :file_options
+    class_attribute :file_options
 
     self.file_options = {
       :base_url => '',

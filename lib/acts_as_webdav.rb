@@ -44,9 +44,9 @@ module Railsdav
       VERSIONS = %w(1 2)
       module ActMethods
         def acts_as_webdav(options = {})
-          class_inheritable_accessor :dav_actions
-          class_inheritable_accessor :dav_versions
-          class_inheritable_accessor :resource_model
+          class_attribute :dav_actions
+          class_attribute :dav_versions
+          class_attribute :resource_model
 
           self.resource_model = options[:resource_model]
           options[:extra_actions]      ||= []
@@ -55,14 +55,15 @@ module Railsdav
           self.dav_versions = VERSIONS + options[:extra_dav_versions]
 
           include InstanceMethods unless included_modules.include?(InstanceMethods)
-          #include Railsdav::Webdav::Callbacks
-          #hide_action(*(ACTIONS.map {|method| "webdav_#{method}" }))
         end
       end
 
       module InstanceMethods
         def webdav
-          method = "webdav_#{request.head? ? "head" : request.method}"
+          if @project.nil?
+            webdavnf
+          end
+          method = "webdav_#{request.head? ? "head" : request.method_symbol.to_s}"
           begin
             raise NotImplementedError unless respond_to?(method, true)
             set_depth
@@ -80,11 +81,11 @@ module Railsdav
 
         def rootwebdav
           set_depth
-          if request.method == :options
+          if request.method_symbol == :options
             webdav_options
           else
             begin
-              raise NotImplementedError unless (request.method == :propfind || request.method == :options)
+              raise NotImplementedError unless (request.method_symbol == :propfind || request.method_symbol == :options)
               #resources = Project.find(:all, :conditions => Project.visible_condition(User.current))
               resources = []
               ms = User.current.memberships
@@ -95,7 +96,7 @@ module Railsdav
               first = resources.first
 
               $KCODE = 'UTF8'
-              #RAILS_DEFAULT_LOGGER.info "Dans propfind"
+              #Rails.logger.error "dans rootwebdav"          
               xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <D:multistatus xmlns:D=\"DAV:\">"
               xml << "<D:response>"
               xml << "<D:href>#{href}</D:href>"
@@ -147,7 +148,8 @@ module Railsdav
         end
 
         def webdavnf
-          if request.method == :options
+          Rails.logger.error "project: #{@project}"
+          if request.method_symbol == :options
             webdav_options
           else
             render :nothing => true, :status => 404
@@ -450,9 +452,7 @@ module Railsdav
         end
 
         def set_path_info
-          raise ForbiddenError if params[:path_info].nil?
-          logger.debug "params[:path_info] = #{params[:path_info].inspect}"
-          path = params[:path_info].join('/')
+          path = params[:path_info].split('/').drop(1).join('/')
           @path_info = convert_path_in(path)
         end
 
