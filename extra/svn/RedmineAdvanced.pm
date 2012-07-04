@@ -91,6 +91,15 @@ and you will have to use this reposman.rb command line to create repository :
 
   reposman.rb --redmine my.redmine.server --svn-dir /var/svn --owner www-data -u http://svn.server/svn-private/
 
+=head1 REPOSITORIES NAMING
+
+A projet repository must be named with the projet identifier. In case
+of multiple repositories for the same project, use the project identifier
+and the repository identifier separated with a dot:
+
+  /var/svn/foo
+  /var/svn/foo.otherrepo
+
 =head1 MIGRATION FROM OLDER RELEASES
 
 If you use an older reposman.rb (r860 or before), you need to change
@@ -201,6 +210,7 @@ use Apache2::Const qw(:common :override :cmd_how);
 use APR::Pool  ();
 use APR::Table ();
 
+use Switch;
 # use Apache2::Directive qw();
 
 my @directives = (
@@ -394,19 +404,19 @@ sub access_handler {
    }
 
    if ( !anonymous_denied($r) ) {
-      my $project_pub = is_public_project( $project_id, $r );
-      if ( $project_pub < 0 ) {
+      my $project_status = get_project_status( $project_id, $r );
+      if ( $project_status < 0 ) {
 
          #Unknown project => only read access is granted
          $r->set_handlers( PerlAuthenHandler => [ \&OK ] )
            if request_is_read_only($r)
             #defined $read_only_methods{ $r->method };  #anonymous access allowed
       }
-      elsif ( $project_pub > 0 ) {
+      elsif ( $project_status > 99 ) {
 
          #public project, so we check anonymous permissions
          my $perm = get_anonymous_permissions( $r, $project_id );
-         if ( check_permission( $perm, $cfg, $r ) ) {
+         if ( check_permission( $perm, $project_status, $cfg, $r ) ) {
             update_redmine_cache( "", $project_id, "1", $r, $cfg );
             $r->set_handlers( PerlAuthenHandler => [ \&OK ] );
          }
@@ -458,10 +468,10 @@ sub authen_handler {
    #Authentication only, no permissions check
    return OK if $cfg->{RedmineAuthenticationOnly};
 
-   my $project_pub = is_public_project( $project_id, $r );
+   my $project_status = get_project_status( $project_id, $r );
 
    #if project doesn't exist then administrator is required
-   if ( $project_pub < 0 ) {
+   if ( $project_status < 0 ) {
       if ( is_admin( $r->user, $r ) ) {
          update_redmine_cache( $r->user, $project_id, $pass_digest, $r, $cfg );
          return OK;
@@ -476,7 +486,7 @@ sub authen_handler {
    my @perms = get_user_permissions( $r->user, $project_id, $cfg, $r );
    if (@perms) {
       for my $perm (@perms) {
-         if ( check_permission( $perm, $cfg, $r ) ) {
+         if ( check_permission( $perm, $project_status, $cfg, $r ) ) {
             update_redmine_cache( $r->user, $project_id, $pass_digest, $r,
                $cfg );
             return OK;
@@ -484,11 +494,11 @@ sub authen_handler {
       }
 
    }
-   elsif ( $project_pub > 0 ) {
+   elsif ( $project_status > 99 ) {
 
       #public project so we check permissions for non-members
       my $perm2 = get_nonmember_permission( $r, $project_id );
-      if ( check_permission( $perm2, $cfg, $r ) ) {
+      if ( check_permission( $perm2, $project_status, $cfg, $r ) ) {
          update_redmine_cache( $r->user, $project_id, $pass_digest, $r, $cfg );
          return OK;
       }
@@ -498,24 +508,36 @@ sub authen_handler {
    return AUTH_REQUIRED;
 }
 
-sub is_public_project {
+sub get_project_status {
+# Status returned:
+# -1 : Project doesn't exist or is archived
+# 1  : Active private Project 
+# 5  : Closed private project
+# 101 : Active public project
+# 105 : Closed public project
+#
+#
+#
+#
    my $project_id = shift;
    my $r          = shift;
 
    my $dbh = connect_database($r);
    my $sth = $dbh->prepare(
-      "SELECT is_public FROM projects WHERE projects.identifier=?");
+      "SELECT is_public, status FROM projects WHERE projects.identifier=? AND projects.status <> 9");
 
    $sth->execute($project_id);
-   my ($ret) = $sth->fetchrow_array;
+   my ($pub, $status) = $sth->fetchrow_array;
    $sth->finish();
    $dbh->disconnect();
 
-   if ( defined $ret ) {
-      return ( $ret ? 1 : 0 );
+   if ( defined $pub ) {
+      my $ret = $pub ? 100 : 0;
+      $ret = $ret + $status;
+      return $ret;
    }
    else {
-      return -1;    #project doesn't exist
+      return -1;    #project doesn't exist or archived
    }
 }
 
@@ -546,7 +568,7 @@ sub get_project_identifier {
    }
    else {
       my $location = $r->location;
-      ($identifier) = $r->uri =~ m{$location/*([^/]+)};
+      ($identifier) = $r->uri =~ m{$location/*([^/.]+)};
       if (defined $cfg->{RedmineGitSmartHttp} and $cfg->{RedmineGitSmartHttp}) {
          $identifier =~ s/\.git//;
       }
@@ -637,14 +659,21 @@ sub authenticate_user {
          );
          $sthldap->execute($auth_source_id);
          while ( my @rowldap = $sthldap->fetchrow_array ) {
+            my $bind_as = $rowldap[3] ? $rowldap[3] : "";
+            my $bind_pw = $rowldap[4] ? $rowldap[4] : "";
+            if ($bind_as =~ m/\$login/) {
+              # replace $login with $redmine_user and use $redmine_pass
+              $bind_as =~ s/\$login/$redmine_user/g;
+              $bind_pw = $redmine_pass
+            }
             my $ldap = Authen::Simple::LDAP->new(
                host => ( $rowldap[2] == 1 || $rowldap[2] eq "t" )
                ? "ldaps://$rowldap[0]"
                : $rowldap[0],
                port   => $rowldap[1],
                basedn => $rowldap[5],
-               binddn => $rowldap[3] ? $rowldap[3] : "",
-               bindpw => $rowldap[4] ? $rowldap[4] : "",
+               binddn => $bind_as,
+               bindpw => $bind_pw,
                filter => "(" . $rowldap[6] . "=%s)"
             );
             $ret = 1
@@ -678,14 +707,23 @@ sub is_admin {
 
 sub check_permission() {
    my $perm = shift;
+   my $project_status = shift;
    my $cfg  = shift;
    my $r    = shift;
 
    my $ret;
+   
+   #Check that project status is compatible with request
+   switch ($project_status){
+      case [5,105] { 
+         if ( !(request_is_read_only($r)) ) {
+            return $ret;
+         }
+      }
+   }
    my @listperms;
    if ( defined $perm ) {
       if ( request_is_read_only($r)) {
-      #if ( defined $read_only_methods{ $r->method } ) {
          @listperms =
            $cfg->{RedmineReadPermissions}
            ? @{ $cfg->{RedmineReadPermissions} }
