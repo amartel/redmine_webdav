@@ -1,4 +1,5 @@
-# = About lib/railsdav.rb
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 $:.unshift File.expand_path(File.dirname(__FILE__))
 
 module Railsdav

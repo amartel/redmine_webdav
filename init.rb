@@ -1,4 +1,5 @@
-#WebDav plugin for REDMINE
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 require 'redmine'
 
 require 'railsdav'

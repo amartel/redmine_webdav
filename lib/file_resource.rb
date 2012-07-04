@@ -1,12 +1,9 @@
 # Copyright (c) 2006 Stuart Eccles
 # Released under the MIT License.  See the LICENSE file for more details.
+#
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 
-# The base_dir parameter can be a string for a directory or a symbol for a method which is run for every
-# request allowing the base directory to be changed based on the request
-#
-# If the parameter :absolute = true the :base_dir setting will be treated as an absolute path, otherwise
-# the it will be taken as a directory underneath the RAILS_ROOT
-#
 
 require 'shared-mime-info'
 require 'tmpdir'
@@ -19,7 +16,6 @@ module Railsdav
     WEBDAV_PROPERTIES = [ :displayname, :creationdate, :getlastmodified,
       :getetag, :getcontenttype, :getcontentlength ]
 
-    #Redmine2.0.1    class_inheritable_accessor :file_options
     class_attribute :file_options
 
     self.file_options = {
@@ -28,7 +24,6 @@ module Railsdav
     }
 
     def initialize(*args)
-      #RAILS_DEFAULT_LOGGER.info "Dans fileresource.initialize projectname= #{@project.name}"
       @project = args.first
       @setting ||= WebdavSetting.find_or_create @project.id
       pinfo=args[1].split("/")

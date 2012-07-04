@@ -3,34 +3,8 @@
 #
 # Modified by Marcello Nuccio.
 #
-# Here is an example configuration:
-#
-# A model:
-#
-#   class WebdavResource < Railsdav::FileResource
-#   end
-#
-# A controller:
-#
-#   class WebDavController < ApplicationController
-#     skip_before_filter :verify_authenticity_token
-#     acts_as_webdav
-#   end
-#
-# the controller must then have a route like:
-#
-#   ActionController::Routing::Routes.draw do |map|
-#     map.connect 'home/*path_info', :controller  => 'web_dav', :action => 'webdav'
-#     map.root :controller  => 'web_dav', :action => 'webdav'
-#   end
-#
-# and you should add webdav methods into config/environments.rb:
-#
-#   ActionController::ACCEPTED_HTTP_METHODS.merge(%w{propfind mkcol move copy})
-#
-#
-# Add authentication using rails authenticate_with_http_basic method.
-#
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 
 require 'action_controller'
 require 'unicode'
@@ -60,6 +34,7 @@ module Railsdav
 
       module InstanceMethods
         def webdav
+          #Rails.logger.error "Entering webdav"          
           if @project.nil?
             webdavnf
           end
@@ -68,12 +43,8 @@ module Railsdav
             raise NotImplementedError unless respond_to?(method, true)
             set_depth
             set_path_info
-            #            if @path_info.split("/").last[0,1] != "."
             check_read(@path_info)
             __send__(method)
-            #            else
-            #              render :nothing => true, :status => 404
-            #            end
           rescue BaseError => error
             render :nothing => true, :status => error.http_status
           end
@@ -86,7 +57,6 @@ module Railsdav
           else
             begin
               raise NotImplementedError unless (request.method_symbol == :propfind || request.method_symbol == :options)
-              #resources = Project.find(:all, :conditions => Project.visible_condition(User.current))
               resources = []
               ms = User.current.memberships
               ms.each do |m|
@@ -96,7 +66,6 @@ module Railsdav
               first = resources.first
 
               $KCODE = 'UTF8'
-              #Rails.logger.error "dans rootwebdav"          
               xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <D:multistatus xmlns:D=\"DAV:\">"
               xml << "<D:response>"
               xml << "<D:href>#{href}</D:href>"
@@ -245,7 +214,6 @@ module Railsdav
           resources = get_dav_resource_props(resource)
 
           $KCODE = 'UTF8'
-          #RAILS_DEFAULT_LOGGER.info "Dans propfind"
           xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?> <D:multistatus xmlns:D=\"DAV:\">"
           resources.flatten.each do |res|
             xml << "<D:response>"
@@ -267,8 +235,6 @@ module Railsdav
           end
           xml << "</D:multistatus>"
           render :text => xml, :status => 207, :layout => false, :content_type => "application/xml"
-
-          #render(:file => PROPFIND_TEMPLATE, :status => 207, :locals => { :resources => resources.flatten } )
         end
 
         PROPPATCH_TEMPLATE = File.dirname(__FILE__) + '/../templates/proppatch.xml.builder'
@@ -344,7 +310,6 @@ module Railsdav
 
           yield(source_resource, dest_path)
           render :nothing => true, :status => (dest_resource ? 204 : 201)
-          #render :nothing => true, :status => 201
         end
 
         def webdav_copy
@@ -370,7 +335,6 @@ module Railsdav
           resource = find_resource_by_path(@path_info)
           raise NotFoundError unless resource
           data_to_send = resource.data
-          #          raise NotFoundError if data_to_send.blank?
 
           if request.headers["If-Modified-Since"]
             if (Time.httpdate(request.headers["If-Modified-Since"].split(';').first) - Time.httpdate(resource.getlastmodified)) >= -0.1
@@ -394,12 +358,6 @@ module Railsdav
         end
 
         private
-
-        #
-        # These are default implementations
-        # If you do not want to implement one of them, dont put
-        # the corresponding HTTP method in ACCEPTED_HTTP_METHODS
-        #
 
         def mkcol_for_path(path)
           raise ForbiddenError unless resource_model

@@ -1,7 +1,7 @@
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 require_dependency 'attachment'
 
-# Patches Redmine's Issues dynamically. Adds a relationship
-# Issue +belongs_to+ to Deliverable
 module WebDavAttachmentPatch
   def self.included(base) # :nodoc:
     base.extend(WebDavClassMethods)
@@ -26,16 +26,19 @@ module WebDavAttachmentPatch
   end
 
   module WebDavInstanceMethods
-    # Wraps the association to get the Deliverable subject. Needed for the
-    # Query and filtering
+    #no change except @temp_file.size >= 0 and self.filename = sanitize_webdavfilename(@temp_file.original_filename)
     def webdavfile=(incoming_file)
       unless incoming_file.nil?
         @temp_file = incoming_file
         if @temp_file.size >= 0
-          self.filename = sanitize_webdavfilename(@temp_file.original_filename)
-          self.disk_filename = Attachment.disk_filename(filename)
-          self.content_type = @temp_file.content_type.to_s.chomp
-          if content_type.blank?
+          if @temp_file.respond_to?(:original_filename)
+            self.filename = sanitize_webdavfilename(@temp_file.original_filename)
+            self.filename.force_encoding("UTF-8") if filename.respond_to?(:force_encoding)
+          end
+          if @temp_file.respond_to?(:content_type)
+            self.content_type = @temp_file.content_type.to_s.chomp
+          end
+          if content_type.blank? && filename.present?
             self.content_type = Redmine::MimeType.of(filename)
           end
           self.filesize = @temp_file.size
@@ -43,16 +46,20 @@ module WebDavAttachmentPatch
       end
     end
 
-    #no change except @temp_file.size >= 0
+    #no change except @temp_file.size >= 0 and remove logger call
     def files_to_final_location_with_webdav
       if @temp_file && (@temp_file.size >= 0)
-        logger.debug("saving '#{self.diskfile}'")
         md5 = Digest::MD5.new
         File.open(diskfile, "wb") do |f| 
-          buffer = ""
-          while (buffer = @temp_file.read(8192))
-            f.write(buffer)
-            md5.update(buffer)
+          if @temp_file.respond_to?(:read)
+            buffer = ""
+            while (buffer = @temp_file.read(8192))
+              f.write(buffer)
+              md5.update(buffer)
+            end
+          else
+            f.write(@temp_file)
+            md5.update(@temp_file)
           end
         end
         self.digest = md5.hexdigest
@@ -66,6 +73,7 @@ module WebDavAttachmentPatch
 
     private
 
+    #like sanitize_filename but don't replace invalid characters with underscore
     def sanitize_webdavfilename(value)
       # get only the filename, not the whole path
       just_filename = value.gsub(/^.*(\\|\/)/, '')

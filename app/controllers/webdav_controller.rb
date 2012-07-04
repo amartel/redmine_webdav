@@ -1,3 +1,5 @@
+# WebDAV plugin - Copyright (c) 2010 Arnaud Martel
+# Released under the GPL License.  See the LICENSE file for more details.
 class WebdavController < ApplicationController
 
   acts_as_webdav :resource_model => Webdav
