@@ -25,7 +25,7 @@ Follow instructions from http://www.redmine.org/projects/redmine/wiki/Plugins :
 * git clone git://github.com/amartel/redmine_webdav.git redmine_webdav
 * cd $REDMINE_HOME
 * bundle install --without development test postgresql sqlite
-* rake db:migrate_plugins RAILS_ENV="production"
+* rake redmine:plugins:migrate RAILS_ENV="production"
 
 Download and install the "light" version of redmine_http_auth with the following command from your $REDMINE_HOME/plugins directory:
 * tar xvzf redmine_webdav/extra/redmine_http_auth.tgz
