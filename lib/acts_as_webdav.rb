@@ -294,7 +294,7 @@ module Railsdav
         def with_source_and_destination_resources
           begin
             uri = URI.parse(request.env['HTTP_DESTINATION'].chomp('/'))
-            base_path = url_for(:only_path => true, :path_info => "")
+            base_path = url_for(:only_path => true, :path_info => @project.identifier).chomp('/')
             raise ForbiddenError if uri.path !~  /^#{Regexp.escape(base_path)}\//
             logger.debug "destination_path = #{$'.inspect}"
             dest_path = $'
