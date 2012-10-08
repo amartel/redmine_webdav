@@ -4,7 +4,7 @@ fr:
   permission_webdav_settings: Configurer WEBDAV
   permission_webdav_access: Utiliser WEBDAV
   subversion_only_info: "Désactive le niveau intermédiaire files/documents/depot et ne gère que les fichiers du dépôt"
-  subversion_enabled_info: "uniquement s'il s'agit d'un dépôt Subversion résidant sur le serveur"
+  subversion_enabled_info: "uniquement s'il s'agit d'un dépôt de type Subversion ou Filesystem résidant sur le serveur"
   field_files_enabled: "Fichiers"
   field_documents_enabled: "Documents"
   field_subversion_enabled: "Dépôt"
@@ -17,3 +17,7 @@ fr:
   files_label: "files"
   documents_label: "documents"
   subversion_label: "depot"
+  field_repos: Dépôts accessibles via WebDAV
+  select_repositories_info: "Seul le dépôt principal sera publié si vous ne sélectionnez aucun dépôt"
+  field_show_identifier: "Afficher l'identifiant du dépôt"
+  show_identifier_info: "L'identifiant du dépot peut être masqué uniquement si un seul dépôt est sélectionné"

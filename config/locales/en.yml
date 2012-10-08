@@ -17,3 +17,7 @@ en:
   files_label: "files"
   documents_label: "documents"
   subversion_label: "repository"
+  field_tab_repos: Repositories published over WebDAV
+  select_repositories_info: Only main repository will be published if no repositories are selected 
+  field_show_identifier: "Show repository identifier"
+  show_identifier_info: "identifier may be hidden when only one repository is published"

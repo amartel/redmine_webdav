@@ -18,6 +18,8 @@
       <p><%= f.text_field :subversion_label, :required => true, :size => 60 %></p>
       <p><%= f.check_box 'macosx_write' %> <%=h l(:macosx_write_info)%></p>
       <p><%= f.check_box 'subversion_only' %> <%=h l(:subversion_only_info)%></p>
+      <p><%= f.select :repos, options_for_select(@project.repositories.collect {|rep| rep.identifier}.delete_if {|x| x == ""}, @webdav_setting.tab_repos), {}, {:multiple => true, :style => "width:250px; heigth: 100px;"} %><br /><em><%=h l(:select_repositories_info)%></em></p>
+      <p><%= f.check_box 'show_identifier' %> <%=h l(:show_identifier_info)%></p>
     </div>
     <%= submit_tag l(:button_update) %>
 <% end %>

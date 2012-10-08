@@ -14,6 +14,7 @@ class WebdavSettingsController < ApplicationController
     subversion_enabled = (params[:setting][:subversion_enabled].to_i == 1)
     subversion_only = (params[:setting][:subversion_only].to_i == 1)
     macosx_write = (params[:setting][:macosx_write].to_i == 1)
+    show_identifier = (params[:setting][:show_identifier].to_i == 1)
     setting = WebdavSetting.find_or_create @project.id
     begin
       setting.transaction do
@@ -25,6 +26,8 @@ class WebdavSettingsController < ApplicationController
         setting.files_label = params[:setting][:files_label].empty? ? l(:files_label) : params[:setting][:files_label]
         setting.documents_label = params[:setting][:documents_label].empty? ? l(:documents_label) : params[:setting][:documents_label]
         setting.subversion_label = params[:setting][:subversion_label].empty? ? l(:subversion_label) : params[:setting][:subversion_label]
+        setting.repos = params[:setting][:repos].delete_if {|x| x == ""}.join("\n")
+        setting.show_identifier = show_identifier
         setting.save!
       end
       flash[:notice] = l(:notice_successful_update)

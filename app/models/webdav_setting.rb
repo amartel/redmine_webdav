@@ -16,8 +16,23 @@ class WebdavSetting < ActiveRecord::Base
       setting.documents_label = Setting.plugin_redmine_webdav['webdav_document_label'].blank? ? l(:documents_label) : Setting.plugin_redmine_webdav['webdav_document_label']
       setting.subversion_label = Setting.plugin_redmine_webdav['webdav_repository_label'].blank? ? l(:subversion_label) : Setting.plugin_redmine_webdav['webdav_repository_label']
       setting.macosx_write = Setting.plugin_redmine_webdav['webdav_macosx']
+      setting.show_identifier = true
       setting.save!      
     end
     return setting
+  end
+  
+  def tab_repos
+    ret = []
+    ret = repos.split(/\n/).delete_if{|x| x == ""} unless repos.nil?
+    return ret
+  end
+
+  def only_repository?
+    subversion_only && subversion_enabled && tab_repos.length <= 1 && !show_identifier
+  end
+  
+  def show_id?
+    tab_repos.length > 0 && ( show_identifier || tab_repos.length > 1 )
   end
 end

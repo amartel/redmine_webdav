@@ -320,6 +320,7 @@ module Railsdav
         end
 
         def webdav_move
+Rails.logger.error "request.env['HTTP_OVERWRITE']: #{request.env['HTTP_OVERWRITE']}"
           if Lock.exists?( :resource=>request.url )
             if not Lock.exists?( :resource=>request.url, :owner=>User.current.login )
               raise ForbiddenError
