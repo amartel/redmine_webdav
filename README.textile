@@ -3,7 +3,7 @@ h1. Introduction
 This WebDav plugin allows to access files and documents using WebDav protocol. 
 This plugin is a fork of this existing railsdav plugin (<a href="http://github.com/funkensturm/railsdav">railsdav</a>) with some modifications to make it run with REDMINE.
 
-Current version was done using REDMINE trunk r9901 (=> 2.0.3 +) and will not work with redmine 1.X 
+Current version was done using REDMINE trunk r10442 (=> 2.1.2 +) and will not work with redmine 1.X 
 
 For repositories, only filesystem and local subversion repositories are supported.
 
@@ -34,7 +34,7 @@ Download and install the "light" version of redmine_http_auth with the following
 h3. 3. Configure your web server
 
 Assuming you are using RHEL5/CentOS5:
-* Copy redmine_webdav/extra/svn/RedmineAdavanced.pm in /etc/httpd/Apache/Authn
+* Copy redmine_webdav/extra/svn/RedmineAdvanced.pm in /etc/httpd/Apache/Authn
 * Create the file /etc/httpd/conf.d/redmine_webdav.conf
 
 @<Location /redmine/webdav>@
@@ -72,6 +72,13 @@ Don't forget to activate the webdav module in the projects where you want to acc
 h3. 7. Use webdav to manage files and documents
 
 You have to use a WebDav client in order to use the plugin. 
+
+Below, you will find instructions for the most used operating systems where webdav support is integrated. However, I strongly recommend you to use a dedicated webdav client. The best ones (from my point of view) are:
+* forklift (for macosx - 20$ but provides many others useful features...): http://www.binarynights.com/
+* Dolphin (for Linux - free): available in most distributions
+* CarotDAV (for Windows - free): http://rei.to/carotdav_en.html (last version: 1.9.8 can be downloaded from http://rei.to/carotdav.html)
+
+If you don't want to use a dedicated webdav client, you can follow these instructions:
 
 For MacOSX (webdav access is natively supported):
 * Open the finder and choose "Go to -> Connect to server..."

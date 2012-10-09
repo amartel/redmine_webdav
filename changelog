@@ -1,3 +1,10 @@
+0.5.0 : 2012-10-09
+fix: support dor redmine 2.1.0+
+new: allow selection and use of multiple repositories
+
+0.4.0 : 2012-07-03
+fix: support for redmine 2.0.3
+
 0.3.2 : 2012-03-15
 new: default values are now configurable from Administration -> Plugins -> WebDav plugin 
 
