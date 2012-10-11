@@ -320,7 +320,6 @@ module Railsdav
         end
 
         def webdav_move
-Rails.logger.error "request.env['HTTP_OVERWRITE']: #{request.env['HTTP_OVERWRITE']}"
           if Lock.exists?( :resource=>request.url )
             if not Lock.exists?( :resource=>request.url, :owner=>User.current.login )
               raise ForbiddenError
@@ -439,13 +438,40 @@ Rails.logger.error "request.env['HTTP_OVERWRITE']: #{request.env['HTTP_OVERWRITE
           end
         end
 
+        def write_repository?(setting, path)
+          apath=path.split("/")
+          repository = nil
+          if setting.only_repository?
+            repository = setting.tab_repos.length == 0 ? @project.repository : @project.repositories.find_by_identifier_param(setting.tab_repos[0])
+          elsif setting.subversion_only
+            if apath.length > 1
+              repository = @project.repositories.find_by_identifier_param(apath[0])
+            end
+          elsif setting.show_id?
+              if apath.length > 2
+                repository = @project.repositories.find_by_identifier_param(apath[1])
+              end
+          else
+            repository = setting.tab_repos.length == 0 ? @project.repository : @project.repositories.find_by_identifier_param(setting.tab_repos[0])
+          end
+          if repository.nil?
+            false
+          else
+            is_davclient_ok = true
+            if request.env["HTTP_USER_AGENT"] =~ /Darwin/
+              is_davclient_ok = (repository.is_a?(Repository::Filesystem) && setting.macosx_write)
+            end
+            repository.scm.respond_to?('webdav_upload') && is_davclient_ok
+          end
+        end
+        
         def check_write(path)
           setting = WebdavSetting.find_or_create @project.id
           if request.env["HTTP_USER_AGENT"] =~ /Darwin/
             raise ForbiddenError unless setting.macosx_write
           end
           if (setting.subversion_only && setting.subversion_enabled)
-            raise ForbiddenError unless (@user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
+            raise ForbiddenError unless (@user.allowed_to?(:commit_access, @project) && write_repository?(setting, path))
           else
             @pinfo = path.split("/")
             if @pinfo.length > 0
@@ -455,13 +481,12 @@ Rails.logger.error "request.env['HTTP_OVERWRITE']: #{request.env['HTTP_OVERWRITE
               when setting.documents_label
                 raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:manage_documents, @project))
               when setting.subversion_label
-                raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:commit_access, @project) && @project.repository.scm.respond_to?('webdav_upload'))
+                raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:commit_access, @project) && write_repository?(setting, path))
               end
             else
               raise ForbiddenError
             end
           end
-
         end
       end
     end
