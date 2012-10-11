@@ -13,7 +13,7 @@ fr:
   field_documents_label: "Dossier"
   field_subversion_label: "Dossier"
   field_macosx_write: "Ecriture MacOSX"
-  macosx_write_info: "Autorise l'accès en écriture pour MacOSX (Beaucoup de fichiers générés!!)"
+  macosx_write_info: "Autorise l'accès en écriture pour MacOSX (Beaucoup de fichiers générés!!). Les dépots subversion resteront en lecture seule pour MacOSX"
   files_label: "files"
   documents_label: "documents"
   subversion_label: "depot"

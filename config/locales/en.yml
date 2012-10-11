@@ -13,7 +13,7 @@ en:
   field_documents_label: "Folder"
   field_subversion_label: "Folder"
   field_macosx_write: "MacOSX writes"
-  macosx_write_info: "Grants MacOSX to write using WEBDAV (lot of files will be created!!)"
+  macosx_write_info: "Grants MacOSX to write using WEBDAV (lot of files will be created!!). Subversion repositories will still read-only for MacOSX"
   files_label: "files"
   documents_label: "documents"
   subversion_label: "repository"
