@@ -465,12 +465,13 @@ module Railsdav
           if file
             container.attachments.delete(file)
           end
-          uploaded_file = ActionController::UploadedTempfile.new(pinfo.last)
-          uploaded_file.binmode
-          uploaded_file.write(content)
-          #        uploaded_file.flush
-          uploaded_file.original_path = pinfo.last
-          uploaded_file.rewind
+          
+          tmpfile = Tempfile.new(pinfo.last)
+          tmpfile.binmode
+          tmpfile.write(content)
+          tmpfile.rewind
+          uploaded_file = ActionDispatch::Http::UploadedFile.new({:filename => pinfo.last, :tempfile => tmpfile})
+          
           a = Attachment.create(:container => container,
           :webdavfile => uploaded_file,
           :description => "",
@@ -479,7 +480,7 @@ module Railsdav
             #a.save
             raise InsufficientStorageError
           end
-          uploaded_file.close!
+          tmpfile.close!
           Mailer.deliver_attachments_added([ a ])
         end
       end
