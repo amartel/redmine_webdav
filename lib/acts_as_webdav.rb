@@ -173,7 +173,7 @@ module Railsdav
             end
           end
 
-          mylock=Lock.create ( :uid=>newlock, :locktype=>locktype, :lockscope=>lockscope, :owner=>User.current.login,
+          mylock=Lock.create( :uid=>newlock, :locktype=>locktype, :lockscope=>lockscope, :owner=>User.current.login,
           :resource => request.url, :timestamp=> Time.now )
 
           xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>"
