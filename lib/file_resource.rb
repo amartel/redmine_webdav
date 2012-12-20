@@ -346,9 +346,6 @@ module Railsdav
       if collection?
         "httpd/unix-directory"
       else
-        #mimetype = MIME.check_globs(displayname).to_s
-        #mimetype.blank? ? "application/octet-stream" : mimetype
-        
         mimetype = MIME::Types.type_for(displayname)
         (mimetype.nil? || mimetype.empty?) ? "application/octet-stream" : mimetype.first
       end
