@@ -5,7 +5,8 @@
 # Released under the GPL License.  See the LICENSE file for more details.
 
 
-require 'shared-mime-info'
+#require 'shared-mime-info'
+require 'mime/types'
 require 'tmpdir'
 require 'fileutils'
 
@@ -345,8 +346,11 @@ module Railsdav
       if collection?
         "httpd/unix-directory"
       else
-        mimetype = MIME.check_globs(displayname).to_s
-        mimetype.blank? ? "application/octet-stream" : mimetype
+        #mimetype = MIME.check_globs(displayname).to_s
+        #mimetype.blank? ? "application/octet-stream" : mimetype
+        
+        mimetype = MIME::Types.type_for(displayname)
+        (mimetype.nil? || mimetype.empty?) ? "application/octet-stream" : mimetype.first
       end
     end
 

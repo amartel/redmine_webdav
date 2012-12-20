@@ -1,3 +1,3 @@
 source 'http://rubygems.org'
 gem "unicode"
-gem "shared-mime-info"
+gem "mime-types"
