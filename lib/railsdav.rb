@@ -8,6 +8,6 @@ end
 
 require 'webdav_errors'
 require 'webdav_resource'
-require 'acts_as_webdav'
-require 'file_resource'
-require 'attachment_patch'
+require 'webdav_acts_as_webdav'
+require 'webdav_file_resource'
+require 'webdav_attachment_patch'

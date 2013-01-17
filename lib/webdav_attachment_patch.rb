@@ -46,6 +46,10 @@ module WebDavAttachmentPatch
       end
     end
 
+    def webdavfile
+      nil
+    end
+
     #no change except @temp_file.size >= 0 and remove logger call
     def files_to_final_location_with_webdav
       if @temp_file && (@temp_file.size >= 0)
