@@ -3,7 +3,7 @@ h1. Introduction
 This WebDav plugin allows to access files and documents using WebDav protocol. 
 This plugin is a fork of this existing railsdav plugin (<a href="http://github.com/funkensturm/railsdav">railsdav</a>) with some modifications to make it run with REDMINE.
 
-Current version was done using REDMINE trunk r10442 (=> 2.1.2 +) and will not work with redmine 1.X 
+Current version was done using REDMINE 2.2-stable with ruby 1.9.3 but any REDMINE release >= 2.1.0 should be supported. Redmine 1.X is not no more supported (but you can still use the readmine_12 branch)
 
 For repositories, only filesystem and local subversion repositories are supported.
 
@@ -14,7 +14,7 @@ To commit changes in Subversion, the plugin opens the repository with the file p
 
 h1. Setup
 
-WEBDAV is using basic HTTP authentication which is not supported in REDMINE core (at least in 2.0.3). A workaround is to use this very nice plugin <a href="http://github.com/AdamLantos/redmine_http_auth">redmine_http_auth</a> in conjunction with Apache and RedmineAdvanced.pm (located in  redmine_webdav/extra/svn). As you may have trouble with it, a "light" version is provided (redmine_http_auth.tgz in redmine_webdav/extra).
+WEBDAV is using basic HTTP authentication which is not supported in REDMINE core. A workaround is to use this very nice plugin <a href="http://github.com/AdamLantos/redmine_http_auth">redmine_http_auth</a> in conjunction with Apache and RedmineAdvanced.pm (located in  redmine_webdav/extra/svn). As you may have trouble with it, a "light" version is provided (redmine_http_auth.tgz in redmine_webdav/extra).
 
 All this documentation is based on my own server configuration. Especially, my REDMINE instance is installed in a /redmine sub-uri (see http://www.redmine.org/wiki/redmine/HowTo_Install_Redmine_in_a_sub-URI for more details). If this doesn't apply to your server, you will have to change the following instructions to reflect your own configuration (for example, replace /redmine/webdav with /webdav only, if you don't use a sub-uri...)
 
@@ -76,7 +76,7 @@ You have to use a WebDav client in order to use the plugin.
 Below, you will find instructions for the most used operating systems where webdav support is integrated. However, I strongly recommend you to use a dedicated webdav client. The best ones (from my point of view) are:
 * forklift (for macosx - 20$ but provides many others useful features...): http://www.binarynights.com/
 * Dolphin (for Linux - free): available in most distributions
-* CarotDAV (for Windows - free): http://rei.to/carotdav_en.html (last version: 1.9.8 can be downloaded from http://rei.to/carotdav.html)
+* CarotDAV (for Windows - free): http://rei.to/carotdav_en.html
 
 If you don't want to use a dedicated webdav client, you can follow these instructions:
 
