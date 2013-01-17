@@ -409,13 +409,14 @@ module Railsdav
           else
             str = URI.unescape(path)
           end
-          str.force_encoding("UTF-8-MAC")
-       
-          if !str.valid_encoding?
-            str.force_encoding("UTF-8")
-          else
-            #logger.warn("encoding: forcing invalid UTF-8 string; text is #{str}")
-            str.encode!(Encoding::UTF_8)
+          
+          if str.respond_to?(:force_encoding)
+            str.force_encoding("UTF-8-MAC")
+            if !str.valid_encoding?
+              str.force_encoding("UTF-8")
+            else
+              str.encode!(Encoding::UTF_8)
+            end
           end
           str
 
