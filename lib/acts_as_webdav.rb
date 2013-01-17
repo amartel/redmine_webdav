@@ -402,12 +402,23 @@ module Railsdav
         end
 
         def convert_path_in(path)
+          str = ""
           case request.env["HTTP_USER_AGENT"]
           when /cadaver/
-            URI.unescape(URI.unescape(path))
+            str = URI.unescape(URI.unescape(path))
           else
-            URI.unescape(path)
+            str = URI.unescape(path)
           end
+          str.force_encoding("UTF-8-MAC")
+       
+          if !str.valid_encoding?
+            str.force_encoding("UTF-8")
+          else
+            #logger.warn("encoding: forcing invalid UTF-8 string; text is #{str}")
+            str.encode!(Encoding::UTF_8)
+          end
+          str
+
         end
 
         def set_path_info
