@@ -186,7 +186,7 @@ module Railsdav
             if @setting.show_id?
               #List selected repositories
               @setting.tab_repos.each do |r|
-                resources << self.class.new(@project, File.join(@setting.subversion_label, r), File.join(@href, FileResource.escape(@setting.subversion_label), r))
+                resources << self.class.new(@project, File.join(@setting.subversion_label, r), File.join(@href, r))
               end
             else
               repository = @setting.tab_repos.length == 0 ? @project.repository : @project.repositories.find_by_identifier_param(@setting.tab_repos[0])
@@ -321,13 +321,13 @@ module Railsdav
         sprintf('%x-%x-%x', @project.id, 0, @project.updated_on.to_i)
       when 1
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          sprintf('%x-%x-%x', @container.size, 0, @container.lastrev.time.to_i)
+          sprintf('%x-%x-%x', @container.size.nil? ? 0 : @container.size, 0, @container.lastrev.time.to_i)
         else
           sprintf('%x-%x-%x', (@project.id * 10) + @container.length, 0, @project.updated_on.to_i)
         end
       else
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          sprintf('%x-%x-%x', @container.size, 0, @container.lastrev.time.to_i)
+          sprintf('%x-%x-%x', @container.size.nil? ? 0 : @container.size, 0, @container.lastrev.time.to_i)
         elsif @container.is_a?(String)
           sprintf('%x-%x-%x', (@project.id * (10**@level)) + @container.length, 0, @project.updated_on.to_i)
         elsif @isdir
