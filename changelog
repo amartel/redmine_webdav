@@ -1,27 +1,30 @@
+0.6.0 : 
+fixed: support for redmine 2.3
+
 0.5.2 : 2013-01-17
-fix: encoding error when using ruby 1.9.3 and webdav access from macosx (UTF-8 vs UTF-8-MAC)
-fix: invalid path error when publishing multiple repositories
+fixed: encoding error when using ruby 1.9.3 and webdav access from macosx (UTF-8 vs UTF-8-MAC)
+fixed: invalid path error when publishing multiple repositories
 
 0.5.1 : 2012-12-20
-fix: better support for ruby 1.9
+fixed: better support for ruby 1.9
 changed: use uuid gem
 changed: use gem mime-types instead of shared-mime-info
 
 0.5.0 : 2012-10-09
-fix: support dor redmine 2.1.0+
+fixed: support dor redmine 2.1.0+
 new: allow selection and use of multiple repositories
 
 0.4.0 : 2012-07-03
-fix: support for redmine 2.0.3
+fixed: support for redmine 2.0.3
 
 0.3.2 : 2012-03-15
 new: default values are now configurable from Administration -> Plugins -> WebDav plugin 
 
 0.3.1 : 2012-02-06
-fix: upload attachment is broken
-fix: Don't create changes for filesystem SCM if required patches have not been applied
-fix: Add response to USERINFO method
-fix: avoid stacktrace in log when invalid method is used
+fixed: upload attachment is broken
+fixed: Don't create changes for filesystem SCM if required patches have not been applied
+fixed: Add response to USERINFO method
+fixed: avoid stacktrace in log when invalid method is used
 new: add support for git smarthttp  in RedmineAdvanced.pm
 
 

@@ -53,8 +53,14 @@ module WebDavAttachmentPatch
     #no change except @temp_file.size >= 0 and remove logger call
     def files_to_final_location_with_webdav
       if @temp_file && (@temp_file.size >= 0)
+        self.disk_directory = target_directory
+        self.disk_filename = Attachment.disk_filename(filename, disk_directory)
+        path = File.dirname(diskfile)
+        unless File.directory?(path)
+          FileUtils.mkdir_p(path)
+        end
         md5 = Digest::MD5.new
-        File.open(diskfile, "wb") do |f| 
+        File.open(diskfile, "wb") do |f|
           if @temp_file.respond_to?(:read)
             buffer = ""
             while (buffer = @temp_file.read(8192))

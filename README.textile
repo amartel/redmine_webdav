@@ -3,7 +3,7 @@ h1. Introduction
 This WebDav plugin allows to access files and documents using WebDav protocol. 
 This plugin is a fork of this existing railsdav plugin (<a href="http://github.com/funkensturm/railsdav">railsdav</a>) with some modifications to make it run with REDMINE.
 
-Current version was done using REDMINE 2.2-stable with ruby 1.9.3 but any REDMINE release >= 2.1.0 should be supported. Redmine 1.X is not no more supported (but you can still use the readmine_12 branch)
+Current version was done using REDMINE 2.3-stable with ruby 1.9.3 and REDMINE release >= 2.3.0 is required. For older versions, you can still use readmine_1.2 and redmine_2.2 branches)
 
 For repositories, only filesystem and local subversion repositories are supported.
 
