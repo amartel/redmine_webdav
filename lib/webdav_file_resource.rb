@@ -285,7 +285,7 @@ module Railsdav
       cdate = @project.created_on
       if !@container.is_a?(String)
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          cdate = @container.lastrev.time
+          cdate = @container.lastrev.time if @container.lastrev.time
         elsif @level > 1
           if @isdir
             cdate = @container.created_on
@@ -301,7 +301,7 @@ module Railsdav
       cdate = @project.updated_on
       if !@container.is_a?(String)
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          cdate = @container.lastrev.time
+          cdate = @container.lastrev.time if @container.lastrev.time
         elsif @level > 1
           if @isdir
             if @container.is_a?(Version)
@@ -327,7 +327,7 @@ module Railsdav
         end
       else
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          sprintf('%x-%x-%x', @container.size.nil? ? 0 : @container.size, 0, @container.lastrev.time.to_i)
+          sprintf('%x-%x-%x', @container.size.nil? ? 0 : @container.size, 0, @container.lastrev.time.nil? ? 0 : @container.lastrev.time.to_i)
         elsif @container.is_a?(String)
           sprintf('%x-%x-%x', (@project.id * (10**@level)) + @container.length, 0, @project.updated_on.to_i)
         elsif @isdir
