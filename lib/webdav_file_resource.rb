@@ -358,7 +358,11 @@ module Railsdav
     def data
       if ! @isdir
         if @container.is_a?(Redmine::Scm::Adapters::Entry)
-          @repository.cat(FileResource.scm_path(@repository, @container.path), @repository.default_branch)
+          if @repository.is_a?(Repository::Filesystem)
+            File.new(File.join(@repository.url, @container.path))
+          else
+            @repository.cat(FileResource.scm_path(@repository, @container.path), @repository.default_branch)
+          end
         else
           File.new(@file.diskfile)
         end
