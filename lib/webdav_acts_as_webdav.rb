@@ -260,7 +260,7 @@ module Railsdav
         end
 
         def webdav_mkcol
-          check_write(@path_info)
+          check_write(@path_info,"C")
           mkcol_for_path(@path_info)
           render :nothing => true, :status => 201
         end
@@ -271,7 +271,7 @@ module Railsdav
               raise ForbiddenError
             end
           end
-          check_write(@path_info)
+          check_write(@path_info,"D")
           resource = find_resource_by_path(@path_info)
           if resource
             resource.delete!
@@ -287,7 +287,8 @@ module Railsdav
             end
           end
 
-          check_write(@path_info)
+          crud = find_resource_by_path(@path_info) ? "U" : "C"
+          check_write(@path_info, crud)
           write_content_to_path(@path_info, request.raw_post)
           render :nothing => true, :status => 201
         end
@@ -315,7 +316,8 @@ module Railsdav
 
         def webdav_copy
           with_source_and_destination_resources do |source_resource, dest_path|
-            check_write(dest_path)
+            crud = find_resource_by_path(dest_path) ? "U" : "C"
+            check_write(dest_path,crud)
             copy_to_path(source_resource, dest_path, @depth)
           end
         end
@@ -327,7 +329,7 @@ module Railsdav
             end
           end
           with_source_and_destination_resources do |source_resource, dest_path|
-            check_write(dest_path)
+            check_write(dest_path,"U")
             move_to_path(source_resource, dest_path, @depth)
           end
         end
@@ -478,7 +480,7 @@ module Railsdav
           end
         end
         
-        def check_write(path)
+        def check_write(path,crud)
           setting = WebdavSetting.find_or_create @project.id
           if request.env["HTTP_USER_AGENT"] =~ /Darwin/
             raise ForbiddenError unless setting.macosx_write
@@ -492,7 +494,14 @@ module Railsdav
               when setting.files_label
                 raise ForbiddenError unless (setting.files_enabled && @user.allowed_to?(:manage_files, @project))
               when setting.documents_label
-                raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:manage_documents, @project))
+                case crud
+                when "C"
+                  raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:add_documents, @project))
+                when "U"
+                  raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:edit_documents, @project))
+                when "D"
+                  raise ForbiddenError unless (setting.documents_enabled && @user.allowed_to?(:delete_documents, @project))
+                end
               when setting.subversion_label
                 raise ForbiddenError unless (setting.subversion_enabled && @user.allowed_to?(:commit_access, @project) && write_repository?(setting, path))
               end
