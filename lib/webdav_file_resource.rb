@@ -506,7 +506,7 @@ module Railsdav
         end
 
         #Test if source and destination are in the same repository
-        if dest_path =~ /^#{svnpath}\//
+        if svnpath == "" || dest_path =~ /^#{svnpath}\//
           if @repository.scm.respond_to?('webdav_move')
             @repository.scm.webdav_move(@repository, FileResource.scm_path(@repository, @container.path), FileResource.scm_path(@repository, dest_path[(svnpath.length)..-1]), "moved/renamed #{File.basename(dest_path)}", nil)
           end
@@ -572,7 +572,11 @@ module Railsdav
         root_url = @href.gsub(/#{fpj}/,'').chomp('/')
         dest_ress = self.class.new(@project, dest_path, File.join(root_url, dest_path))
         if !@isdir
-          FileResource.write_content_to_path(@project, dest_path, data)
+          data_to_send = data
+          if data.kind_of?(File)
+            data_to_send = data.read
+          end
+          FileResource.write_content_to_path(@project, dest_path, data_to_send)
         else
           if !(dest_ress && dest_ress.valid?)
             FileResource.mkcol_for_path(@project, dest_path)
