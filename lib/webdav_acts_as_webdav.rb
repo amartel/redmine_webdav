@@ -56,7 +56,7 @@ module Railsdav
             webdav_options
           else
             begin
-              raise NotImplementedError unless (request.method_symbol == :propfind || request.method_symbol == :options)
+              raise NotImplementedError unless (request.method_symbol == :propfind || request.method_symbol == :options || request.method_symbol == :get)
               resources = []
               ms = User.current.memberships
               ms.each do |m|
